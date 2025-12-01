@@ -18,7 +18,6 @@ import org.testcontainers.utility.DockerImageName;
 @Testcontainers
 public class TestContainerConfig {
 
-    @Container
     @Bean
     @ServiceConnection
     public PostgreSQLContainer<?> postgresContainer() {
@@ -30,7 +29,6 @@ public class TestContainerConfig {
                 .withReuse(true);
     }
 
-    @Container
     @Bean
     @ServiceConnection
     public GenericContainer<?> redisContainer() {
@@ -40,7 +38,6 @@ public class TestContainerConfig {
                 .withReuse(true);
     }
 
-    @Container
     @Bean
     @ServiceConnection
     public KafkaContainer kafkaContainer() {
