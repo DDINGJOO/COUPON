@@ -29,44 +29,55 @@ public class CouponIssueEntity extends BaseEntity {
     @Id
     private Long id; // Snowflake ID
 
-    @Column(nullable = false)
+    @Column(name = "policy_id", nullable = false)
     private Long policyId;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private CouponStatus status;
 
-    @Column(unique = true)
+    @Column(name = "reservation_id", unique = true)
     private String reservationId;
 
+    @Column(name = "order_id")
     private String orderId;
 
-    @Column(nullable = false)
+    @Column(name = "issued_at", nullable = false)
     private LocalDateTime issuedAt;
 
+    @Column(name = "reserved_at")
     private LocalDateTime reservedAt;
+
+    @Column(name = "used_at")
     private LocalDateTime usedAt;
+
+    @Column(name = "expired_at")
     private LocalDateTime expiredAt;
+
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt; // 정책의 valid_until
 
-    @Column(precision = 10, scale = 2)
+    @Column(name = "actual_discount_amount", precision = 10, scale = 2)
     private BigDecimal actualDiscountAmount;
 
     // 조회 성능을 위한 denormalized 필드
-    @Column(length = 100)
+    @Column(name = "coupon_name", length = 100)
     private String couponName;
 
-    @Column(precision = 10, scale = 2)
+    @Column(name = "discount_value", precision = 10, scale = 2)
     private BigDecimal discountValue;
 
-    @Column(length = 20)
+    @Column(name = "discount_type", length = 20)
     private String discountType;
 
-    @Column(precision = 10, scale = 2)
+    @Column(name = "max_discount_amount", precision = 10, scale = 2)
     private BigDecimal maxDiscountAmount;
+
+    @Column(name = "min_order_amount", precision = 10, scale = 2)
+    private BigDecimal minOrderAmount;
 
     @Version
     private Long version; // Optimistic Locking

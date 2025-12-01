@@ -50,6 +50,9 @@ public class CouponPolicyEntity extends BaseEntity {
     @Column(precision = 10, scale = 2)
     private BigDecimal maxDiscountAmount; // 퍼센트 할인시 최대 금액
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal minOrderAmount; // 최소 주문 금액
+
     @Type(JsonType.class)
     @Column(columnDefinition = "jsonb")
     private ItemApplicableRuleJson applicableRule;
@@ -68,6 +71,7 @@ public class CouponPolicyEntity extends BaseEntity {
     private Integer maxUsagePerUser;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean isActive = true;
 
     private Long createdBy;

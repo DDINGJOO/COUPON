@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum DiscountType {
+    AMOUNT("고정 금액 할인"),
     FIXED_AMOUNT("고정 금액 할인"),
     PERCENTAGE("퍼센트 할인");
 

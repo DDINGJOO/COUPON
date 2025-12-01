@@ -18,6 +18,11 @@ public interface LoadCouponIssuePort {
     Optional<CouponIssue> loadById(Long issueId);
 
     /**
+     * 쿠폰 ID와 사용자 ID로 조회
+     */
+    Optional<CouponIssue> loadByIdAndUserId(Long issueId, Long userId);
+
+    /**
      * 쿠폰 ID와 사용자 ID로 조회 (비관적 락)
      */
     Optional<CouponIssue> loadByIdAndUserIdWithLock(Long issueId, Long userId);

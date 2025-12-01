@@ -7,6 +7,7 @@ import com.teambind.coupon.application.port.out.LoadCouponPolicyPort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
 import com.teambind.coupon.application.port.out.SaveCouponPolicyPort;
 import com.teambind.coupon.common.annotation.DistributedLock;
+import com.teambind.coupon.common.util.SnowflakeIdGenerator;
 import com.teambind.coupon.domain.exception.CouponDomainException;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponPolicy;
@@ -33,6 +34,7 @@ public class CouponDownloadService implements DownloadCouponUseCase {
     private final SaveCouponPolicyPort saveCouponPolicyPort;
     private final LoadCouponIssuePort loadCouponIssuePort;
     private final SaveCouponIssuePort saveCouponIssuePort;
+    private final SnowflakeIdGenerator idGenerator;
 
     @Override
     @Transactional
@@ -41,23 +43,26 @@ public class CouponDownloadService implements DownloadCouponUseCase {
         log.info("쿠폰 다운로드 시작 - userId: {}, couponCode: {}",
                 command.getUserId(), command.getCouponCode());
 
-        // 1. 쿠폰 정책 조회 (비관적 락)
-        CouponPolicy policy = loadCouponPolicyPort.loadByCodeWithLock(command.getCouponCode())
+        // 1. 쿠폰 코드를 대문자로 변환 (대소문자 구분 없이 처리)
+        String normalizedCode = command.getCouponCode().trim().toUpperCase();
+
+        // 2. 쿠폰 정책 조회
+        CouponPolicy policy = loadCouponPolicyPort.loadByCodeAndActive(normalizedCode)
                 .orElseThrow(() -> new CouponDomainException.CouponNotFound(0L));
 
-        // 2. 쿠폰 정책 검증
+        // 3. 쿠폰 정책 검증
         validateCouponPolicy(policy);
 
-        // 3. 사용자 발급 제한 확인
+        // 4. 사용자 발급 제한 확인
         validateUserLimit(command.getUserId(), policy);
 
-        // 4. 재고 차감 시도
+        // 5. 재고 차감 시도
         boolean stockDecremented = saveCouponPolicyPort.decrementStock(policy.getId());
         if (!stockDecremented) {
-            throw new CouponDomainException.CouponStockExhausted(command.getCouponCode());
+            throw new CouponDomainException.StockExhausted("쿠폰 재고가 소진되었습니다: " + normalizedCode);
         }
 
-        // 5. 쿠폰 발급
+        // 6. 쿠폰 발급
         CouponIssue couponIssue = createCouponIssue(command.getUserId(), policy);
         CouponIssue savedIssue = saveCouponIssuePort.save(couponIssue);
 
@@ -89,7 +94,7 @@ public class CouponDownloadService implements DownloadCouponUseCase {
             if (policy.isNotStarted()) {
                 throw new CouponDomainException("아직 발급 기간이 시작되지 않았습니다");
             }
-            throw new CouponDomainException.CouponStockExhausted(policy.getCouponCode());
+            throw new CouponDomainException.StockExhausted("쿠폰 재고가 소진되었습니다: " + policy.getCouponCode());
         }
     }
 
@@ -109,13 +114,28 @@ public class CouponDownloadService implements DownloadCouponUseCase {
      * 쿠폰 발급 엔티티 생성
      */
     private CouponIssue createCouponIssue(Long userId, CouponPolicy policy) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime expiredAt = calculateExpiryDate(now, policy);
+
         return CouponIssue.builder()
+                .id(idGenerator.nextId())
                 .policyId(policy.getId())
                 .userId(userId)
                 .status(CouponStatus.ISSUED)
-                .issuedAt(LocalDateTime.now())
+                .issuedAt(now)
+                .expiredAt(expiredAt)
                 .couponName(policy.getCouponName())
                 .discountPolicy(policy.getDiscountPolicy())
                 .build();
+    }
+
+    private LocalDateTime calculateExpiryDate(LocalDateTime issuedAt, CouponPolicy policy) {
+        // 정책 만료일이 설정된 경우
+        if (policy.getValidUntil() != null) {
+            return policy.getValidUntil();
+        }
+
+        // 기본 30일
+        return issuedAt.plusDays(30);
     }
 }

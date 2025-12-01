@@ -20,11 +20,12 @@ public class CouponPolicyMapper {
             return null;
         }
 
-        DiscountPolicy discountPolicy = new DiscountPolicy(
-                entity.getDiscountType(),
-                entity.getDiscountValue(),
-                entity.getMaxDiscountAmount()
-        );
+        DiscountPolicy discountPolicy = DiscountPolicy.builder()
+                .discountType(entity.getDiscountType())
+                .discountValue(entity.getDiscountValue())
+                .minOrderAmount(entity.getMinOrderAmount())
+                .maxDiscountAmount(entity.getMaxDiscountAmount())
+                .build();
 
         ItemApplicableRule applicableRule = null;
         if (entity.getApplicableRule() != null) {

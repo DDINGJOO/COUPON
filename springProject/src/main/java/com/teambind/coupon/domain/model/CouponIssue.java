@@ -76,6 +76,24 @@ public class CouponIssue {
     }
 
     /**
+     * 쿠폰 사용 처리
+     * @param orderId 주문 ID
+     * @param discountAmount 실제 할인 금액
+     * @return 사용 성공 여부
+     */
+    public boolean use(String orderId, BigDecimal discountAmount) {
+        if (!status.isUsable() && status != CouponStatus.RESERVED) {
+            return false;
+        }
+
+        this.status = CouponStatus.USED;
+        this.orderId = orderId;
+        this.usedAt = LocalDateTime.now();
+        this.actualDiscountAmount = discountAmount;
+        return true;
+    }
+
+    /**
      * 쿠폰 사용 확정
      * @param orderId 주문 ID
      * @param discountAmount 실제 할인 금액
@@ -89,6 +107,28 @@ public class CouponIssue {
         this.orderId = orderId;
         this.usedAt = LocalDateTime.now();
         this.actualDiscountAmount = discountAmount;
+    }
+
+    /**
+     * 쿠폰 예약 해제
+     * @return 해제 성공 여부
+     */
+    public boolean release() {
+        if (status != CouponStatus.RESERVED) {
+            return false;
+        }
+
+        this.status = CouponStatus.ISSUED;
+        this.reservationId = null;
+        this.reservedAt = null;
+        return true;
+    }
+
+    /**
+     * 쿠폰 취소 처리
+     */
+    public void cancel() {
+        this.status = CouponStatus.CANCELLED;
     }
 
     /**

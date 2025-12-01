@@ -42,4 +42,28 @@ public class CouponDomainException extends RuntimeException {
             super(String.format("사용자 쿠폰 발급 한도 초과 - userId: %d, couponCode: %s", userId, couponCode));
         }
     }
+
+    public static class InvalidRequest extends CouponDomainException {
+        public InvalidRequest(String message) {
+            super(message);
+        }
+    }
+
+    public static class CouponNotIssuable extends CouponDomainException {
+        public CouponNotIssuable(String message) {
+            super(message);
+        }
+    }
+
+    public static class ExceedMaxUsage extends CouponDomainException {
+        public ExceedMaxUsage(String message) {
+            super(message);
+        }
+    }
+
+    public static class StockExhausted extends CouponDomainException {
+        public StockExhausted(String message) {
+            super(message);
+        }
+    }
 }
