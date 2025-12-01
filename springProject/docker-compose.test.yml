@@ -1,0 +1,158 @@
+version: '3.8'
+
+services:
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: coupon-postgres-test
+    ports:
+      - "25432:5432"
+    environment:
+      POSTGRES_DB: coupon_test_db
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_INITDB_ARGS: --encoding=UTF-8
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coupon-test-network
+
+  redis-test:
+    image: redis:7-alpine
+    container_name: coupon-redis-test
+    ports:
+      - "26379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-test-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coupon-test-network
+
+  zookeeper-test:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: coupon-zookeeper-test
+    ports:
+      - "22181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo 'ruok' | nc localhost 2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coupon-test-network
+
+  kafka-test:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: coupon-kafka-test
+    depends_on:
+      zookeeper-test:
+        condition: service_healthy
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper-test:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-test:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_RETENTION_BYTES: 1073741824
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - coupon-test-network
+
+  kafka-ui-test:
+    image: provectuslabs/kafka-ui:latest
+    container_name: coupon-kafka-ui-test
+    depends_on:
+      kafka-test:
+        condition: service_healthy
+    ports:
+      - "28080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: test-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-test:9092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper-test:2181
+    networks:
+      - coupon-test-network
+
+  prometheus-test:
+    image: prom/prometheus:latest
+    container_name: coupon-prometheus-test
+    ports:
+      - "29090:9090"
+    volumes:
+      - ./monitoring/prometheus-test.yml:/etc/prometheus/prometheus.yml
+      - prometheus-test-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - coupon-test-network
+
+  grafana-test:
+    image: grafana/grafana:latest
+    container_name: coupon-grafana-test
+    ports:
+      - "23000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-test-data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus-test
+    networks:
+      - coupon-test-network
+
+  # Mock 외부 서비스 (결제, 사용자 서비스 등)
+  mock-services:
+    image: mockserver/mockserver:latest
+    container_name: coupon-mock-services
+    ports:
+      - "21080:1080"
+    environment:
+      MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializerJson.json
+    volumes:
+      - ./test/mock/mockserver.properties:/config/mockserver.properties
+      - ./test/mock/initializerJson.json:/config/initializerJson.json
+    networks:
+      - coupon-test-network
+
+volumes:
+  postgres-test-data:
+  redis-test-data:
+  prometheus-test-data:
+  grafana-test-data:
+
+networks:
+  coupon-test-network:
+    driver: bridge
