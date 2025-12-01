@@ -2,7 +2,10 @@ package com.teambind.coupon.adapter.in.web;
 
 import com.teambind.coupon.adapter.in.web.dto.CouponIssueResponse;
 import com.teambind.coupon.adapter.in.web.dto.DownloadCouponRequest;
+import com.teambind.coupon.adapter.in.web.dto.ReserveCouponRequest;
+import com.teambind.coupon.adapter.in.web.dto.ReserveCouponResponse;
 import com.teambind.coupon.application.port.in.DownloadCouponUseCase;
+import com.teambind.coupon.application.port.in.ReserveCouponUseCase;
 import com.teambind.coupon.application.port.out.LoadCouponPolicyPort;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponPolicy;
@@ -15,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 /**
  * 쿠폰 컨트롤러
- * 쿠폰 다운로드 및 조회 API
+ * 쿠폰 다운로드, 예약 및 조회 API
  */
 @Slf4j
 @RestController
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class CouponController {
 
     private final DownloadCouponUseCase downloadCouponUseCase;
+    private final ReserveCouponUseCase reserveCouponUseCase;
     private final LoadCouponPolicyPort loadCouponPolicyPort;
 
     /**
@@ -57,6 +61,36 @@ public class CouponController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
+    }
+
+    /**
+     * 쿠폰 예약 API
+     * 게이트웨이로부터 전달받은 예약 정보로 쿠폰을 예약 상태로 변경
+     *
+     * @param request 쿠폰 예약 요청
+     * @return 예약 결과
+     */
+    @PostMapping("/reserve")
+    public ResponseEntity<ReserveCouponResponse> reserveCoupon(
+            @Valid @RequestBody ReserveCouponRequest request) {
+
+        log.info("쿠폰 예약 요청 - reservationId: {}, userId: {}, couponId: {}",
+                request.getReservationId(), request.getUserId(), request.getCouponId());
+
+        ReserveCouponUseCase.CouponReservationResult result =
+                reserveCouponUseCase.reserveCoupon(request.toCommand());
+
+        ReserveCouponResponse response = ReserveCouponResponse.from(result);
+
+        if (result.isSuccess()) {
+            log.info("쿠폰 예약 성공 - reservationId: {}, couponId: {}",
+                    request.getReservationId(), request.getCouponId());
+            return ResponseEntity.ok(response);
+        } else {
+            log.warn("쿠폰 예약 실패 - reservationId: {}, message: {}",
+                    request.getReservationId(), result.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
     }
 
     /**
