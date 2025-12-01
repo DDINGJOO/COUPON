@@ -39,6 +39,7 @@ public class CouponPolicy {
 
     // 통계용 필드 (실시간으로 업데이트되지 않음, 캐시나 별도 조회)
     @Setter
+    @Builder.Default
     private transient AtomicInteger currentIssueCount = new AtomicInteger(0);
 
     /**
