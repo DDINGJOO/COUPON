@@ -134,9 +134,7 @@ Boolean locked = redisTemplate.opsForValue()
 - `payment-completed`: 결제 완료 시 쿠폰 사용 확정
 
 **발행 이벤트**
-- `coupon-issued`: 쿠폰 발급 완료
-- `coupon-used`: 쿠폰 사용 완료
-- `coupon-expired`: 쿠폰 만료
+- 현재 이벤트 발행 요구사항은 제거되었습니다.
 
 ### 패키지 구조
 
