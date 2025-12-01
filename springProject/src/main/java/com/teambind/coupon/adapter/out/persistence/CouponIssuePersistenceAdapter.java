@@ -38,6 +38,12 @@ public class CouponIssuePersistenceAdapter implements LoadCouponIssuePort, SaveC
     }
 
     @Override
+    public Optional<CouponIssue> loadByIdAndUserId(Long issueId, Long userId) {
+        return repository.findByIdAndUserId(issueId, userId)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<CouponIssue> loadByIdAndUserIdWithLock(Long issueId, Long userId) {
         return repository.findByIdAndUserIdWithLock(issueId, userId)
                 .map(mapper::toDomain);
