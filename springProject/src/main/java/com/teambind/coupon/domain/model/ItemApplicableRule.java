@@ -17,6 +17,9 @@ import java.util.List;
 @AllArgsConstructor
 public class ItemApplicableRule {
 
+    // 자주 사용되는 인스턴스
+    public static final ItemApplicableRule ALL = forAllItems();
+
     private boolean allItemsApplicable; // 모든 상품 적용 가능 여부
     private List<Long> applicableItemIds; // 적용 가능한 상품 ID 목록
 
