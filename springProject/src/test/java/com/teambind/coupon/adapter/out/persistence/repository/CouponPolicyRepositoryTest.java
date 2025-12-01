@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,8 +26,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  * CouponPolicyRepository JPA Repository 테스트
  */
 @DataJpaTest
-@ActiveProfiles("test")
+@Import(com.teambind.coupon.config.TestJpaConfig.class)
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = {
+    "spring.datasource.url=jdbc:postgresql://localhost:25432/coupon_test_db",
+    "spring.datasource.username=testuser",
+    "spring.datasource.password=testpass",
+    "spring.datasource.driver-class-name=org.postgresql.Driver",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",
+    "spring.jpa.properties.hibernate.globally_quoted_identifiers=false",
+    "spring.jpa.hibernate.naming.physical-strategy=org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl"
+})
 @DisplayName("CouponPolicyRepository 테스트")
 class CouponPolicyRepositoryTest {
 
