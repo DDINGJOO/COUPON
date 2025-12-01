@@ -69,6 +69,17 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssueEntity, 
     List<CouponIssueEntity> findExpiredCoupons(@Param("now") LocalDateTime now);
 
     /**
+     * 쿠폰 ID와 사용자 ID로 조회
+     */
+    @Query("SELECT ci FROM CouponIssueEntity ci " +
+           "WHERE ci.id = :couponId " +
+           "AND ci.userId = :userId")
+    Optional<CouponIssueEntity> findByIdAndUserId(
+            @Param("couponId") Long couponId,
+            @Param("userId") Long userId
+    );
+
+    /**
      * 쿠폰 ID와 사용자 ID로 조회 (비관적 락)
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
