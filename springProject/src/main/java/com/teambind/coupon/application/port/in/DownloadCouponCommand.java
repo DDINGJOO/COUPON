@@ -25,6 +25,14 @@ public class DownloadCouponCommand {
      * 정적 팩토리 메서드
      */
     public static DownloadCouponCommand of(String couponCode, Long userId) {
+        // 유효성 검증
+        if (couponCode == null || couponCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("쿠폰 코드는 필수입니다");
+        }
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("유효한 사용자 ID가 필요합니다");
+        }
+
         return DownloadCouponCommand.builder()
                 .couponCode(couponCode)
                 .userId(userId)
