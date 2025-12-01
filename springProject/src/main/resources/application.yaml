@@ -1,0 +1,107 @@
+spring:
+  application:
+    name: coupon-service
+
+  profiles:
+    active: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:25432/coupon_db
+    username: coupon_user
+    password: coupon_pass_2024
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: false
+        jdbc:
+          lob:
+            non_contextual_creation: true
+        types:
+          print:
+            banner: false
+
+  data:
+    redis:
+      host: localhost
+      port: 26379
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 8
+          min-idle: 2
+          max-wait: -1ms
+
+  kafka:
+    bootstrap-servers: localhost:39092
+    consumer:
+      group-id: coupon-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: payment:com.teambind.coupon.adapter.in.kafka.dto.PaymentCompletedEvent
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      ack-mode: manual
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  level:
+    root: INFO
+    com.teambind.coupon: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.springframework.kafka: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Coupon Service Configuration
+coupon:
+  reservation:
+    timeout: 10m
+  rate-limit:
+    per-minute: 5
+    per-hour: 20
+  security:
+    block-duration: 24h
+    max-failures: 10
+
+redisson:
+  single-server-config:
+    address: redis://localhost:26379
+    connection-pool-size: 50
+    connection-minimum-idle-size: 10
