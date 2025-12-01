@@ -100,6 +100,12 @@ coupon:
     block-duration: 24h
     max-failures: 10
 
+kafka:
+  topics:
+    payment-completed: payment-completed
+    coupon-used: coupon-used
+    coupon-issued: coupon-issued
+
 redisson:
   single-server-config:
     address: redis://localhost:26379
