@@ -23,11 +23,12 @@ public class CouponIssueMapper {
         DiscountPolicy discountPolicy = null;
         if (entity.getDiscountType() != null && entity.getDiscountValue() != null) {
             DiscountType discountType = DiscountType.valueOf(entity.getDiscountType());
-            discountPolicy = new DiscountPolicy(
-                    discountType,
-                    entity.getDiscountValue(),
-                    entity.getMaxDiscountAmount()
-            );
+            discountPolicy = DiscountPolicy.builder()
+                    .discountType(discountType)
+                    .discountValue(entity.getDiscountValue())
+                    .minOrderAmount(entity.getMinOrderAmount())
+                    .maxDiscountAmount(entity.getMaxDiscountAmount())
+                    .build();
         }
 
         return CouponIssue.builder()
@@ -72,6 +73,7 @@ public class CouponIssueMapper {
         if (domain.getDiscountPolicy() != null) {
             builder.discountType(domain.getDiscountPolicy().getDiscountType().name())
                     .discountValue(domain.getDiscountPolicy().getDiscountValue())
+                    .minOrderAmount(domain.getDiscountPolicy().getMinOrderAmount())
                     .maxDiscountAmount(domain.getDiscountPolicy().getMaxDiscountAmount());
         }
 
