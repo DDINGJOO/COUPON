@@ -2,47 +2,76 @@ package com.teambind.coupon.application.port.in;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+
 
 import java.util.List;
 
 /**
- * 쿠폰 직접 발급 커맨드
- * 관리자가 특정 사용자들에게 직접 쿠폰을 발급
+ * 직접 쿠폰 발급 커맨드
+ * 관리자가 특정 사용자에게 직접 쿠폰 발급
  */
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@AllArgsConstructor
 @Builder
-@EqualsAndHashCode
 public class DirectIssueCouponCommand {
 
-    @NotNull(message = "정책 ID는 필수입니다")
-    @Positive(message = "정책 ID는 양수여야 합니다")
-    private Long policyId;
+    @NotNull(message = "쿠폰 정책 ID는 필수입니다")
+    private final Long couponPolicyId;
 
-    @NotNull(message = "사용자 ID 목록은 필수입니다")
-    private List<Long> userIds;
+    @NotNull(message = "사용자 ID는 필수입니다")
+    private final List<Long> userIds;
 
-    private String reason; // 발급 사유
-    private Long issuedBy; // 발급 처리자 ID
+    @NotNull(message = "발급자 ID는 필수입니다")
+    private final String issuedBy;
+
+    private final String reason;  // 발급 사유
+
+    @Positive(message = "발급 수량은 양수여야 합니다")
+    @Builder.Default
+    private final int quantityPerUser = 1;  // 사용자당 발급 수량
+
+    private final boolean skipValidation;  // 검증 스킵 여부
 
     /**
-     * 정적 팩토리 메서드
+     * 단일 사용자 발급용 팩토리 메서드
      */
-    public static DirectIssueCouponCommand of(Long policyId, List<Long> userIds) {
+    public static DirectIssueCouponCommand forSingleUser(
+            Long couponPolicyId,
+            Long userId,
+            String issuedBy,
+            String reason) {
         return DirectIssueCouponCommand.builder()
-                .policyId(policyId)
-                .userIds(userIds)
+                .couponPolicyId(couponPolicyId)
+                .userIds(List.of(userId))
+                .issuedBy(issuedBy)
+                .reason(reason)
+                .quantityPerUser(1)
                 .build();
     }
 
-    public static DirectIssueCouponCommand of(Long policyId, List<Long> userIds, String reason, Long issuedBy) {
+    /**
+     * 다중 사용자 발급용 팩토리 메서드
+     */
+    public static DirectIssueCouponCommand forMultipleUsers(
+            Long couponPolicyId,
+            List<Long> userIds,
+            String issuedBy,
+            String reason,
+            int quantityPerUser) {
         return DirectIssueCouponCommand.builder()
-                .policyId(policyId)
+                .couponPolicyId(couponPolicyId)
                 .userIds(userIds)
-                .reason(reason)
                 .issuedBy(issuedBy)
+                .reason(reason)
+                .quantityPerUser(quantityPerUser)
                 .build();
+    }
+
+    /**
+     * 총 발급 예정 수량
+     */
+    public int getTotalQuantity() {
+        return userIds.size() * quantityPerUser;
     }
 }
