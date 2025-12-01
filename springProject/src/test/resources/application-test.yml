@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: coupon-service-test
+
+  datasource:
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+    url: jdbc:tc:postgresql:15-alpine:///coupon_test_db
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false
+        use_sql_comments: true
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  kafka:
+    consumer:
+      group-id: coupon-test-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+        spring.json.use.type.headers: false
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 60000
+
+logging:
+  level:
+    com.teambind.coupon: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.kafka: INFO
+    org.springframework.data.redis: INFO
+
+# 테스트용 설정
+test:
+  timeout:
+    reservation: 5 # 5분 (테스트용 짧은 타임아웃)
+  rate-limit:
+    enabled: true
+    max-requests-per-minute: 100
+  mock:
+    external-services: true
