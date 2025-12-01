@@ -74,4 +74,30 @@ public class DirectIssueCouponCommand {
     public int getTotalQuantity() {
         return userIds.size() * quantityPerUser;
     }
+
+    /**
+     * 호환성을 위한 정적 팩토리 메서드
+     */
+    public static DirectIssueCouponCommand of(Long userId, Long policyId, String issuedBy) {
+        return DirectIssueCouponCommand.builder()
+                .couponPolicyId(policyId)
+                .userIds(List.of(userId))
+                .issuedBy(issuedBy)
+                .quantityPerUser(1)
+                .build();
+    }
+
+    /**
+     * policyId getter (호환성)
+     */
+    public Long getPolicyId() {
+        return couponPolicyId;
+    }
+
+    /**
+     * 단일 사용자 ID 반환 (첫 번째)
+     */
+    public Long getUserId() {
+        return userIds != null && !userIds.isEmpty() ? userIds.get(0) : null;
+    }
 }
