@@ -32,7 +32,7 @@ dependencies {
     // Database
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.postgresql:postgresql'
-    implementation 'com.vladmihalcea:hibernate-types-60:2.21.1'  // PostgreSQL JSONB support
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-63:3.7.0'  // PostgreSQL JSONB support
 
     // Redis
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
