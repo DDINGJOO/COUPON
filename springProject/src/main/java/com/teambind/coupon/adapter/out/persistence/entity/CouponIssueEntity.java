@@ -68,6 +68,9 @@ public class CouponIssueEntity extends BaseEntity {
     @Column(precision = 10, scale = 2)
     private BigDecimal maxDiscountAmount;
 
+    @Column(precision = 10, scale = 2)
+    private BigDecimal minOrderAmount;
+
     @Version
     private Long version; // Optimistic Locking
 
