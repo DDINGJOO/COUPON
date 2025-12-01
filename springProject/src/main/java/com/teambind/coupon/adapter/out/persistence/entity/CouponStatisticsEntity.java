@@ -30,30 +30,30 @@ public class CouponStatisticsEntity extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "policy_id", nullable = false)
     private Long policyId;
 
-    @Column(nullable = false)
+    @Column(name = "date", nullable = false)
     private LocalDate date;
 
-    @Column(nullable = false)
+    @Column(name = "total_issued", nullable = false)
     @Builder.Default
     private Integer totalIssued = 0;
 
-    @Column(nullable = false)
+    @Column(name = "total_used", nullable = false)
     @Builder.Default
     private Integer totalUsed = 0;
 
-    @Column(nullable = false)
+    @Column(name = "total_expired", nullable = false)
     @Builder.Default
     private Integer totalExpired = 0;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "total_discount_amount", nullable = false, precision = 15, scale = 2)
     @Builder.Default
     private BigDecimal totalDiscountAmount = BigDecimal.ZERO;
 
     // 시간대별 사용 통계 (0-23시)
-    @Column(columnDefinition = "integer[]")
+    @Column(name = "hourly_usage", columnDefinition = "integer[]")
     private Integer[] hourlyUsage;
 
     @ManyToOne(fetch = FetchType.LAZY)
