@@ -37,15 +37,19 @@ public class CouponStatisticsEntity extends BaseEntity {
     private LocalDate date;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalIssued = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalUsed = 0;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer totalExpired = 0;
 
     @Column(nullable = false, precision = 15, scale = 2)
+    @Builder.Default
     private BigDecimal totalDiscountAmount = BigDecimal.ZERO;
 
     // 시간대별 사용 통계 (0-23시)
