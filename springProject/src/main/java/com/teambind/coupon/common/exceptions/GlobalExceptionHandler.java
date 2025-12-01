@@ -1,6 +1,6 @@
-package com.teambind.springproject.common.exceptions;
+package com.teambind.coupon.common.exceptions;
 
-
+import com.teambind.coupon.domain.exception.CouponDomainException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -16,6 +16,46 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+
+	/**
+	 * 쿠폰 도메인 예외 처리
+	 */
+	@ExceptionHandler(CouponDomainException.class)
+	public ResponseEntity<ErrorResponse> handleCouponDomainException(
+			CouponDomainException ex, HttpServletRequest request) {
+		log.warn("CouponDomainException: {}", ex.getMessage());
+
+		HttpStatus status;
+		String errorCode;
+
+		if (ex instanceof CouponDomainException.CouponNotFound) {
+			status = HttpStatus.NOT_FOUND;
+			errorCode = "COUPON_NOT_FOUND";
+		} else if (ex instanceof CouponDomainException.CouponAlreadyUsed) {
+			status = HttpStatus.CONFLICT;
+			errorCode = "COUPON_ALREADY_USED";
+		} else if (ex instanceof CouponDomainException.CouponExpired) {
+			status = HttpStatus.GONE;
+			errorCode = "COUPON_EXPIRED";
+		} else if (ex instanceof CouponDomainException.CouponStockExhausted) {
+			status = HttpStatus.CONFLICT;
+			errorCode = "COUPON_STOCK_EXHAUSTED";
+		} else if (ex instanceof CouponDomainException.UserCouponLimitExceeded) {
+			status = HttpStatus.CONFLICT;
+			errorCode = "USER_COUPON_LIMIT_EXCEEDED";
+		} else {
+			status = HttpStatus.BAD_REQUEST;
+			errorCode = "COUPON_ERROR";
+		}
+
+		ErrorResponse errorResponse = ErrorResponse.of(
+				status.value(),
+				errorCode,
+				ex.getMessage(),
+				request.getRequestURI()
+		);
+		return ResponseEntity.status(status).body(errorResponse);
+	}
 
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<ErrorResponse> handlePlaceException(
