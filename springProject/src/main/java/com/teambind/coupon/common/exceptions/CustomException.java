@@ -1,38 +1,40 @@
-package com.teambind.springproject.common.exceptions;
+package com.teambind.coupon.common.exceptions;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * PlaceInfo 도메인의 모든 예외의 기본 클래스
- * Domain Exception과 Application Exception의 공통 부모 클래스
+ * 쿠폰 서비스의 커스텀 예외 클래스
+ * 구체적인 예외를 위한 non-abstract 클래스
  */
 @Getter
-public abstract class CustomException extends RuntimeException {
+public class CustomException extends RuntimeException {
 
 	private final ErrorCode errorCode;
 	private final HttpStatus httpStatus;
 
-	protected CustomException(ErrorCode errorCode) {
+	public CustomException(ErrorCode errorCode) {
 		super(errorCode.getMessage());
 		this.errorCode = errorCode;
 		this.httpStatus = errorCode.getStatus();
 	}
 
-	protected CustomException(ErrorCode errorCode, String message) {
+	public CustomException(ErrorCode errorCode, String message) {
 		super(message);
 		this.errorCode = errorCode;
 		this.httpStatus = errorCode.getStatus();
 	}
 
-	protected CustomException(ErrorCode errorCode, String message, Throwable cause) {
+	public CustomException(ErrorCode errorCode, String message, Throwable cause) {
 		super(message, cause);
 		this.errorCode = errorCode;
 		this.httpStatus = errorCode.getStatus();
 	}
 
 	/**
-	 * 예외 타입 반환 (Domain/Application 구분용)
+	 * 예외 타입 반환
 	 */
-	public abstract String getExceptionType();
+	public String getExceptionType() {
+		return "APPLICATION";
+	}
 }
