@@ -1,9 +1,12 @@
 package com.teambind.coupon.adapter.in.web;
 
 import com.teambind.coupon.adapter.in.web.dto.CouponIssueResponse;
+import com.teambind.coupon.adapter.in.web.dto.DirectIssueRequest;
+import com.teambind.coupon.adapter.in.web.dto.DirectIssueResponse;
 import com.teambind.coupon.adapter.in.web.dto.DownloadCouponRequest;
 import com.teambind.coupon.adapter.in.web.dto.ReserveCouponRequest;
 import com.teambind.coupon.adapter.in.web.dto.ReserveCouponResponse;
+import com.teambind.coupon.application.port.in.DirectIssueCouponUseCase;
 import com.teambind.coupon.application.port.in.DownloadCouponUseCase;
 import com.teambind.coupon.application.port.in.ReserveCouponUseCase;
 import com.teambind.coupon.application.port.out.LoadCouponPolicyPort;
@@ -28,6 +31,7 @@ public class CouponController {
 
     private final DownloadCouponUseCase downloadCouponUseCase;
     private final ReserveCouponUseCase reserveCouponUseCase;
+    private final DirectIssueCouponUseCase directIssueCouponUseCase;
     private final LoadCouponPolicyPort loadCouponPolicyPort;
 
     /**
@@ -89,6 +93,39 @@ public class CouponController {
         } else {
             log.warn("쿠폰 예약 실패 - reservationId: {}, message: {}",
                     request.getReservationId(), result.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        }
+    }
+
+    /**
+     * 쿠폰 직접 발급 API (관리자용)
+     * DIRECT 타입 쿠폰을 특정 사용자들에게 직접 발급
+     *
+     * @param request 직접 발급 요청
+     * @return 발급 결과
+     */
+    @PostMapping("/direct-issue")
+    public ResponseEntity<DirectIssueResponse> directIssueCoupons(
+            @Valid @RequestBody DirectIssueRequest request) {
+
+        log.info("쿠폰 직접 발급 요청 - policyId: {}, userCount: {}, issuedBy: {}",
+                request.getCouponPolicyId(), request.getUserIds().size(), request.getIssuedBy());
+
+        DirectIssueCouponUseCase.DirectIssueResult result =
+                directIssueCouponUseCase.directIssue(request.toCommand());
+
+        DirectIssueResponse response = DirectIssueResponse.from(result);
+
+        if (result.isFullySuccessful()) {
+            log.info("쿠폰 직접 발급 완전 성공 - 발급: {}/{}",
+                    result.successCount(), result.requestedCount());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } else if (result.isPartiallySuccessful()) {
+            log.warn("쿠폰 직접 발급 부분 성공 - 성공: {}, 실패: {}",
+                    result.successCount(), result.failedCount());
+            return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
+        } else {
+            log.error("쿠폰 직접 발급 전체 실패 - 실패: {}", result.failedCount());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
     }
