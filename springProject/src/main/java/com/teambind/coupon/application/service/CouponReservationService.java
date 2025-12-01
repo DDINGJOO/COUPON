@@ -5,6 +5,7 @@ import com.teambind.coupon.application.port.in.ReserveCouponUseCase;
 import com.teambind.coupon.application.port.out.LoadCouponIssuePort;
 import com.teambind.coupon.application.port.out.LoadCouponPolicyPort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
+import com.teambind.coupon.common.annotation.DistributedLock;
 import com.teambind.coupon.domain.exception.CouponDomainException;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponPolicy;
@@ -37,6 +38,7 @@ public class CouponReservationService implements ReserveCouponUseCase {
 
     @Override
     @Transactional
+    @DistributedLock(key = "#command.userId + ':' + #command.couponId", prefix = "coupon:reserve", waitTime = 3, leaseTime = 5)
     public CouponReservationResult reserveCoupon(ReserveCouponCommand command) {
         log.info("쿠폰 예약 시작 - reservationId: {}, userId: {}, couponId: {}",
                 command.getReservationId(), command.getUserId(), command.getCouponId());

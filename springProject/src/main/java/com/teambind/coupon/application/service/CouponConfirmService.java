@@ -4,6 +4,7 @@ import com.teambind.coupon.application.port.in.ConfirmCouponUseCommand;
 import com.teambind.coupon.application.port.in.ConfirmCouponUseUseCase;
 import com.teambind.coupon.application.port.out.LoadCouponIssuePort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
+import com.teambind.coupon.common.annotation.DistributedLock;
 import com.teambind.coupon.domain.exception.CouponDomainException;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponStatus;
@@ -29,6 +30,7 @@ public class CouponConfirmService implements ConfirmCouponUseUseCase {
 
     @Override
     @Transactional
+    @DistributedLock(key = "#command.reservationId", prefix = "coupon:confirm", waitTime = 5, leaseTime = 10)
     public void confirmCouponUse(ConfirmCouponUseCommand command) {
         log.info("쿠폰 사용 확정 시작 - reservationId: {}, orderId: {}",
                 command.getReservationId(), command.getOrderId());

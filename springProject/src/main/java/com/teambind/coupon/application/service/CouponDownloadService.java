@@ -6,6 +6,7 @@ import com.teambind.coupon.application.port.out.LoadCouponIssuePort;
 import com.teambind.coupon.application.port.out.LoadCouponPolicyPort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
 import com.teambind.coupon.application.port.out.SaveCouponPolicyPort;
+import com.teambind.coupon.common.annotation.DistributedLock;
 import com.teambind.coupon.domain.exception.CouponDomainException;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponPolicy;
@@ -35,6 +36,7 @@ public class CouponDownloadService implements DownloadCouponUseCase {
 
     @Override
     @Transactional
+    @DistributedLock(key = "#command.couponCode", prefix = "coupon:download", waitTime = 5, leaseTime = 10)
     public CouponIssue downloadCoupon(DownloadCouponCommand command) {
         log.info("쿠폰 다운로드 시작 - userId: {}, couponCode: {}",
                 command.getUserId(), command.getCouponCode());
