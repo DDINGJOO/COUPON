@@ -89,16 +89,21 @@ public class CouponDirectIssueService implements DirectIssueCouponUseCase {
         }
 
         // 5. 결과 생성
-        DirectIssueResult result = new DirectIssueResult(
-                command.getTotalQuantity(),
-                issuedCoupons.size(),
-                failures.size() * command.getQuantityPerUser(),
-                issuedCoupons,
-                failures
-        );
+        DirectIssueResult result = DirectIssueResult.builder()
+                .policyId(policy.getId())
+                .requestedCount(command.getTotalQuantity())
+                .successCount(issuedCoupons.size())
+                .failedCount(failures.size() * command.getQuantityPerUser())
+                .success(!issuedCoupons.isEmpty())
+                .message(String.format("발급 완료: 성공 %d, 실패 %d", issuedCoupons.size(), failures.size()))
+                .issuedCoupons(issuedCoupons)
+                .failures(failures)
+                .failedUserIds(failures.stream().map(DirectIssueCouponUseCase.IssueFailure::userId).toList())
+                .errors(failures.stream().map(DirectIssueCouponUseCase.IssueFailure::reason).toList())
+                .build();
 
         log.info("직접 쿠폰 발급 완료 - 성공: {}/{}, 실패: {}",
-                result.successCount(), result.requestedCount(), result.failedCount());
+                result.getSuccessCount(), result.getRequestedCount(), result.getFailedCount());
 
         // 6. 발급 이벤트 발행 (필요시)
         publishDirectIssueEvent(result, command);
@@ -202,13 +207,18 @@ public class CouponDirectIssueService implements DirectIssueCouponUseCase {
                 .map(userId -> new IssueFailure(userId, reason, "STOCK_EXHAUSTED"))
                 .collect(Collectors.toList());
 
-        return new DirectIssueResult(
-                command.getTotalQuantity(),
-                0,
-                command.getTotalQuantity(),
-                List.of(),
-                failures
-        );
+        return DirectIssueResult.builder()
+                .policyId(command.getCouponPolicyId())
+                .requestedCount(command.getTotalQuantity())
+                .successCount(0)
+                .failedCount(command.getTotalQuantity())
+                .success(false)
+                .message(reason)
+                .issuedCoupons(List.of())
+                .failures(failures)
+                .failedUserIds(command.getUserIds())
+                .errors(List.of(reason))
+                .build();
     }
 
     /**
@@ -218,10 +228,10 @@ public class CouponDirectIssueService implements DirectIssueCouponUseCase {
         // TODO: 이벤트 발행 구현
         if (result.isFullySuccessful()) {
             log.info("직접 발급 성공 이벤트 - count: {}, issuedBy: {}",
-                    result.successCount(), command.getIssuedBy());
+                    result.getSuccessCount(), command.getIssuedBy());
         } else if (result.isPartiallySuccessful()) {
             log.warn("직접 발급 부분 성공 이벤트 - success: {}, failed: {}",
-                    result.successCount(), result.failedCount());
+                    result.getSuccessCount(), result.getFailedCount());
         }
     }
 }

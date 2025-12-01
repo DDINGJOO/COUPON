@@ -36,21 +36,21 @@ public class DirectIssueResponse {
     public static DirectIssueResponse from(DirectIssueResult result) {
         String message;
         if (result.isFullySuccessful()) {
-            message = String.format("모든 쿠폰이 성공적으로 발급되었습니다. (총 %d개)", result.successCount());
+            message = String.format("모든 쿠폰이 성공적으로 발급되었습니다. (총 %d개)", result.getSuccessCount());
         } else if (result.isPartiallySuccessful()) {
             message = String.format("쿠폰 발급이 부분적으로 성공했습니다. (성공: %d개, 실패: %d개)",
-                    result.successCount(), result.failedCount());
+                    result.getSuccessCount(), result.getFailedCount());
         } else {
-            message = String.format("쿠폰 발급에 실패했습니다. (실패: %d개)", result.failedCount());
+            message = String.format("쿠폰 발급에 실패했습니다. (실패: %d개)", result.getFailedCount());
         }
 
         return DirectIssueResponse.builder()
-                .success(result.failedCount() == 0)
-                .requestedCount(result.requestedCount())
-                .successCount(result.successCount())
-                .failedCount(result.failedCount())
-                .issuedCoupons(mapToIssuedCouponInfo(result.issuedCoupons()))
-                .failures(mapToFailureInfo(result.failures()))
+                .success(result.getFailedCount() == 0)
+                .requestedCount(result.getRequestedCount())
+                .successCount(result.getSuccessCount())
+                .failedCount(result.getFailedCount())
+                .issuedCoupons(mapToIssuedCouponInfo(result.getIssuedCoupons()))
+                .failures(mapToFailureInfo(result.getFailures()))
                 .message(message)
                 .issuedAt(LocalDateTime.now())
                 .build();

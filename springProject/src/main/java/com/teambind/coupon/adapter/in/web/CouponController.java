@@ -118,14 +118,14 @@ public class CouponController {
 
         if (result.isFullySuccessful()) {
             log.info("쿠폰 직접 발급 완전 성공 - 발급: {}/{}",
-                    result.successCount(), result.requestedCount());
+                    result.getSuccessCount(), result.getRequestedCount());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } else if (result.isPartiallySuccessful()) {
             log.warn("쿠폰 직접 발급 부분 성공 - 성공: {}, 실패: {}",
-                    result.successCount(), result.failedCount());
+                    result.getSuccessCount(), result.getFailedCount());
             return ResponseEntity.status(HttpStatus.MULTI_STATUS).body(response);
         } else {
-            log.error("쿠폰 직접 발급 전체 실패 - 실패: {}", result.failedCount());
+            log.error("쿠폰 직접 발급 전체 실패 - 실패: {}", result.getFailedCount());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
     }
