@@ -92,13 +92,18 @@ logging:
 # Coupon Service Configuration
 coupon:
   reservation:
-    timeout: 10m
+    timeout: 10  # minutes
   rate-limit:
     per-minute: 5
     per-hour: 20
   security:
     block-duration: 24h
     max-failures: 10
+  scheduler:
+    timeout:
+      
+      enabled: true
+      cron: "0 * * * * *"  # 매 1분마다 실행
 
 kafka:
   topics:
