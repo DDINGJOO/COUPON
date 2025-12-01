@@ -1,8 +1,8 @@
-package com.teambind.springproject.common.exceptions.application;
+package com.teambind.coupon.common.exceptions.application;
 
 
-import com.teambind.springproject.common.exceptions.CustomException;
-import com.teambind.springproject.common.exceptions.ErrorCode;
+import com.teambind.coupon.common.exceptions.CustomException;
+import com.teambind.coupon.common.exceptions.ErrorCode;
 
 /**
  * 인증되지 않은 요청일 때 발생하는 예외
