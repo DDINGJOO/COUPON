@@ -1,0 +1,26 @@
+# Claude Code 관련 파일
+.claude/
+
+# IDE 관련
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Build 디렉토리
+target/
+build/
+out/
+
+# 로그 파일
+*.log
+logs/
+
+# OS 관련
+.DS_Store
+Thumbs.db
+
+# 임시 파일
+*.swp
+*.tmp
+*~
