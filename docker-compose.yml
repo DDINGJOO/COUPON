@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - 메인 데이터베이스
+  postgres:
+    image: postgres:15-alpine
+    container_name: coupon-postgres
+    environment:
+      POSTGRES_DB: coupon_db
+      POSTGRES_USER: coupon_user
+      POSTGRES_PASSWORD: coupon_pass_2024
+      TZ: Asia/Seoul
+    ports:
+      - "25432:5432"  # 호스트:25432 -> 컨테이너:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts/postgres:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coupon_user -d coupon_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coupon-network
+
+  # Redis - 캐싱 및 분산 락
+  redis:
+    image: redis:7-alpine
+    container_name: coupon-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "26379:6379"  # 호스트:26379 -> 컨테이너:6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - coupon-network
+
+  # Kafka (Zookeeper 포함 단일 노드)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: coupon-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "32181:2181"  # 호스트:32181 -> 컨테이너:2181
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_logs:/var/lib/zookeeper/log
+    networks:
+      - coupon-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: coupon-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "39092:39092"  # 호스트:39092 -> 컨테이너:39092 (외부 접속용)
+      - "39093:9093"   # 호스트:39093 -> 컨테이너:9093 (내부 통신용)
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:39092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9093,EXTERNAL://localhost:39092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9093 --list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - coupon-network
+
+  # Kafka UI (선택사항 - 개발 편의)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: coupon-kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "38080:8080"  # 호스트:38080 -> 컨테이너:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+      DYNAMIC_CONFIG_ENABLED: 'true'
+    networks:
+      - coupon-network
+
+  # Redis Commander (선택사항 - Redis GUI)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: coupon-redis-commander
+    depends_on:
+      - redis
+    ports:
+      - "38081:8081"  # 호스트:38081 -> 컨테이너:8081
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    networks:
+      - coupon-network
+
+  # pgAdmin (선택사항 - PostgreSQL GUI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: coupon-pgadmin
+    depends_on:
+      - postgres
+    ports:
+      - "35050:80"  # 호스트:35050 -> 컨테이너:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@coupon.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - coupon-network
+
+networks:
+  coupon-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  zookeeper_logs:
+    driver: local
+  pgadmin_data:
+    driver: local
