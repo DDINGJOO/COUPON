@@ -1,4 +1,4 @@
-package com.teambind.springproject.common.exceptions;
+package com.teambind.coupon.common.exceptions;
 
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
@@ -24,6 +24,11 @@ public enum ErrorCode {
 	EXTERNAL_API_ERROR("SYSTEM_003", "External API error", HttpStatus.BAD_GATEWAY),
 	CACHE_ERROR("SYSTEM_004", "Cache error", HttpStatus.INTERNAL_SERVER_ERROR),
 	EVENT_PUBLISH_FAILED("SYSTEM_005", "Failed to publish event", HttpStatus.INTERNAL_SERVER_ERROR),
+
+	// 락 관련 에러 (LOCK_0XX)
+	LOCK_ACQUISITION_FAILED("LOCK_001", "Failed to acquire lock", HttpStatus.CONFLICT),
+	LOCK_INTERRUPTED("LOCK_002", "Lock acquisition interrupted", HttpStatus.INTERNAL_SERVER_ERROR),
+	LOCK_TIMEOUT("LOCK_003", "Lock operation timeout", HttpStatus.REQUEST_TIMEOUT),
 	;
 	private final String errCode;
 	private final String message;
