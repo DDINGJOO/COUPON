@@ -3,8 +3,10 @@ spring:
     name: coupon-service-test
 
   datasource:
-    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
-    url: jdbc:tc:postgresql:15-alpine:///coupon_test_db
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:25432/coupon_test_db
+    username: testuser
+    password: testpass
     hikari:
       maximum-pool-size: 5
       minimum-idle: 2
@@ -23,10 +25,13 @@ spring:
 
   data:
     redis:
+      host: localhost
+      port: 26379
       repositories:
         enabled: false
 
   kafka:
+    bootstrap-servers: localhost:29092
     consumer:
       group-id: coupon-test-group
       auto-offset-reset: earliest
