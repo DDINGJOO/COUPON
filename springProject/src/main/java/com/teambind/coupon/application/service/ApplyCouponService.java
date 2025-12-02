@@ -89,25 +89,32 @@ public class ApplyCouponService implements ApplyCouponUseCase {
         log.info("쿠폰 락 해제 요청 - reservationId: {}", reservationId);
 
         try {
-            // 예약 정보 조회 및 취소 처리
-            loadReservationPort.findById(reservationId).ifPresent(reservation -> {
-                // 쿠폰 상태를 ISSUED로 복구
-                loadCouponIssuePort.findById(Long.valueOf(reservation.getCouponId()))
-                        .ifPresent(coupon -> {
-                            coupon.rollback();
-                            saveCouponIssuePort.save(coupon);
-                        });
+            // 예약 정보 조회
+            CouponReservation reservation = loadReservationPort.findById(reservationId)
+                    .orElseThrow(() -> new IllegalArgumentException("예약을 찾을 수 없습니다: " + reservationId));
 
-                // 예약 취소
-                reservation.cancel("LOCK_RELEASE");
-                saveReservationPort.save(reservation);
-            });
+            // 쿠폰 상태를 ISSUED로 복구
+            CouponIssue coupon = loadCouponIssuePort.findById(reservation.getCouponId())
+                    .orElseThrow(() -> new IllegalArgumentException("쿠폰을 찾을 수 없습니다: " + reservation.getCouponId()));
 
-            // Redis 락 해제
-            String lockKey = "coupon:apply:" + reservationId;
-            distributedLock.unlock(lockKey, reservationId);
+            coupon.rollback();
+            saveCouponIssuePort.save(coupon);
 
-            log.info("쿠폰 락 해제 완료 - reservationId: {}", reservationId);
+            // 예약 취소
+            reservation.cancel("LOCK_RELEASE");
+            saveReservationPort.save(reservation);
+
+            // Redis 락 해제 (올바른 키와 value 사용)
+            String lockKey = "coupon:apply:" + reservation.getCouponId();
+            if (reservation.getLockValue() != null) {
+                distributedLock.unlock(lockKey, reservation.getLockValue());
+                log.info("Redis 락 해제 성공 - lockKey: {}, couponId: {}", lockKey, reservation.getCouponId());
+            } else {
+                log.warn("락 value가 없어 Redis 락을 해제할 수 없습니다 - reservationId: {}", reservationId);
+            }
+
+            log.info("쿠폰 락 해제 완료 - reservationId: {}, couponId: {}",
+                    reservationId, reservation.getCouponId());
         } catch (Exception e) {
             log.error("쿠폰 락 해제 실패 - reservationId: {}", reservationId, e);
             throw new RuntimeException("쿠폰 락 해제 실패", e);
@@ -158,6 +165,7 @@ public class ApplyCouponService implements ApplyCouponUseCase {
                     .reservedAt(LocalDateTime.now())
                     .expiresAt(LocalDateTime.now().plusMinutes(30)) // 30분 유효
                     .status(ReservationStatus.PENDING)
+                    .lockValue(lockValue) // 락 해제를 위한 value 저장
                     .build();
 
             saveReservationPort.save(reservation);
