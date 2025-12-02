@@ -10,22 +10,16 @@ import com.teambind.coupon.application.port.out.LoadReservationPort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
 import com.teambind.coupon.application.port.out.SaveReservationPort;
 import com.teambind.coupon.domain.model.CouponIssue;
-import com.teambind.coupon.domain.model.CouponPolicy;
 import com.teambind.coupon.domain.model.CouponReservation;
 import com.teambind.coupon.domain.model.CouponStatus;
-import com.teambind.coupon.domain.model.DiscountType;
-import com.teambind.coupon.domain.model.ReservationStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 /**
  * 쿠폰 적용 서비스
@@ -42,6 +36,7 @@ public class ApplyCouponService implements ApplyCouponUseCase {
     private final LoadReservationPort loadReservationPort;
     private final SaveReservationPort saveReservationPort;
     private final RedisDistributedLock distributedLock;
+    private final CouponLockService couponLockService;
 
     @Override
     @Transactional
@@ -66,8 +61,8 @@ public class ApplyCouponService implements ApplyCouponUseCase {
             );
 
             if (applicableCoupon.isPresent()) {
-                // 쿠폰 락 획득 시도
-                CouponApplyResponse response = tryLockAndApplyCoupon(
+                // 쿠폰 락 획득 시도 (별도 서비스 호출)
+                CouponApplyResponse response = couponLockService.tryLockAndApplyCoupon(
                         applicableCoupon.get(), request
                 );
 
@@ -135,61 +130,6 @@ public class ApplyCouponService implements ApplyCouponUseCase {
                 .findFirst();
     }
 
-    /**
-     * 쿠폰 락 획득 및 적용
-     */
-    private CouponApplyResponse tryLockAndApplyCoupon(CouponIssue coupon, CouponApplyRequest request) {
-        String lockKey = "coupon:apply:" + coupon.getId();
-        String lockValue = UUID.randomUUID().toString();
-
-        // 분산 락 획득 시도 (5초 타임아웃)
-        if (!distributedLock.tryLock(lockKey, lockValue, Duration.ofSeconds(5))) {
-            log.warn("쿠폰 락 획득 실패 - couponId: {}", coupon.getId());
-            return CouponApplyResponse.empty();
-        }
-
-        try {
-            // 쿠폰 정책 조회
-            CouponPolicy policy = loadCouponPolicyPort.loadById(coupon.getPolicyId())
-                    .orElseThrow(() -> new RuntimeException("쿠폰 정책을 찾을 수 없습니다"));
-
-            // 예약 생성
-            String reservationId = generateReservationId();
-            CouponReservation reservation = CouponReservation.builder()
-                    .reservationId(reservationId)
-                    .couponId(coupon.getId())
-                    .userId(request.getUserId())
-                    .orderId(null) // 주문 ID는 결제 시 업데이트
-                    .orderAmount(BigDecimal.valueOf(request.getOrderAmount()))
-                    .discountAmount(calculateDiscount(policy, request.getOrderAmount()))
-                    .reservedAt(LocalDateTime.now())
-                    .expiresAt(LocalDateTime.now().plusMinutes(30)) // 30분 유효
-                    .status(ReservationStatus.PENDING)
-                    .lockValue(lockValue) // 락 해제를 위한 value 저장
-                    .build();
-
-            saveReservationPort.save(reservation);
-
-            // 쿠폰 상태를 RESERVED로 변경
-            coupon.reserve(null); // orderId는 나중에 업데이트
-            saveCouponIssuePort.save(coupon);
-
-            // 응답 생성
-            return CouponApplyResponse.builder()
-                    .couponId(String.valueOf(coupon.getId()))
-                    .couponName(policy.getCouponName())
-                    .discountType(policy.getDiscountType())
-                    .discountValue(policy.getDiscountValue())
-                    .maxDiscountAmount(policy.getMaxDiscountAmount())
-                    .build();
-
-        } catch (Exception e) {
-            // 예외 발생 시 락 해제
-            distributedLock.unlock(lockKey, lockValue);
-            log.error("쿠폰 적용 실패 - couponId: {}", coupon.getId(), e);
-            return CouponApplyResponse.empty();
-        }
-    }
 
     /**
      * 상품에 적용 가능한 쿠폰인지 확인
@@ -213,36 +153,4 @@ public class ApplyCouponService implements ApplyCouponUseCase {
                 .orElse(false);
     }
 
-    /**
-     * 할인 금액 계산
-     */
-    private BigDecimal calculateDiscount(CouponPolicy policy, Long orderAmount) {
-        BigDecimal amount = BigDecimal.valueOf(orderAmount);
-
-        if (policy.getDiscountType() == DiscountType.AMOUNT ||
-            policy.getDiscountType() == DiscountType.FIXED_AMOUNT) {
-            // 정액 할인
-            return policy.getDiscountValue().min(amount);
-        } else if (policy.getDiscountType() == DiscountType.PERCENTAGE) {
-            // 퍼센트 할인
-            BigDecimal discount = amount.multiply(policy.getDiscountValue())
-                    .divide(BigDecimal.valueOf(100));
-
-            // 최대 할인 금액 제한
-            if (policy.getMaxDiscountAmount() != null) {
-                discount = discount.min(policy.getMaxDiscountAmount());
-            }
-
-            return discount.min(amount);
-        } else {
-            return BigDecimal.ZERO;
-        }
-    }
-
-    /**
-     * 예약 ID 생성
-     */
-    private String generateReservationId() {
-        return "RESV-" + System.currentTimeMillis() + "-" + UUID.randomUUID().toString().substring(0, 8);
-    }
 }
