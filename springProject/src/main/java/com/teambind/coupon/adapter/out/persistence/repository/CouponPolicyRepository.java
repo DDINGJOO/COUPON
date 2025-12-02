@@ -75,6 +75,32 @@ public interface CouponPolicyRepository extends JpaRepository<CouponPolicyEntity
     int decrementStock(@Param("policyId") Long policyId);
 
     /**
+     * 배치 재고 차감
+     */
+    @Modifying
+    @Query("UPDATE CouponPolicyEntity cp " +
+           "SET cp.currentIssueCount = cp.currentIssueCount + :quantity " +
+           "WHERE cp.id = :policyId " +
+           "AND cp.currentIssueCount + :quantity <= cp.maxIssueCount")
+    int decrementStockBatch(@Param("policyId") Long policyId, @Param("quantity") int quantity);
+
+    /**
+     * 재고 복구
+     */
+    @Modifying
+    @Query("UPDATE CouponPolicyEntity cp " +
+           "SET cp.currentIssueCount = GREATEST(0, cp.currentIssueCount - :quantity) " +
+           "WHERE cp.id = :policyId")
+    int incrementStock(@Param("policyId") Long policyId, @Param("quantity") int quantity);
+
+    /**
+     * 비관적 락으로 정책 조회
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT cp FROM CouponPolicyEntity cp WHERE cp.id = :policyId")
+    Optional<CouponPolicyEntity> findByIdWithPessimisticLock(@Param("policyId") Long policyId);
+
+    /**
      * 정책 존재 여부 확인
      */
     boolean existsByCouponCode(String couponCode);
