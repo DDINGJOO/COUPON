@@ -1,4 +1,4 @@
-package com.teambind.springproject.common.util.json;
+package com.teambind.coupon.common.util.json;
 
 public interface JsonUtil {
 	String toJson(Object object);
