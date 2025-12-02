@@ -160,4 +160,19 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssueEntity, 
      * 사용자 ID와 상태로 쿠폰 목록 조회
      */
     List<CouponIssueEntity> findByUserIdAndStatus(Long userId, CouponStatus status);
+
+    /**
+     * 사용자 ID로 쿠폰 목록 조회
+     */
+    List<CouponIssueEntity> findByUserId(Long userId);
+
+    /**
+     * 정책 ID로 쿠폰 목록 조회
+     */
+    List<CouponIssueEntity> findByPolicyId(Long policyId);
+
+    /**
+     * 예약 ID로 쿠폰 조회
+     */
+    Optional<CouponIssueEntity> findByReservationId(String reservationId);
 }
