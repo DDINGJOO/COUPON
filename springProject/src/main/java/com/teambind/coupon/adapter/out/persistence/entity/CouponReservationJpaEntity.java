@@ -50,6 +50,9 @@ public class CouponReservationJpaEntity {
     @Column(name = "status", nullable = false)
     private ReservationStatus status;
 
+    @Column(name = "lock_value")
+    private String lockValue;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
