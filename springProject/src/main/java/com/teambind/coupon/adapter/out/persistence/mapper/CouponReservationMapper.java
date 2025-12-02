@@ -29,6 +29,7 @@ public class CouponReservationMapper {
                 .reservedAt(reservation.getReservedAt())
                 .expiresAt(reservation.getExpiresAt())
                 .status(reservation.getStatus())
+                .lockValue(reservation.getLockValue())
                 .build();
     }
 
@@ -50,6 +51,7 @@ public class CouponReservationMapper {
                 .reservedAt(entity.getReservedAt())
                 .expiresAt(entity.getExpiresAt())
                 .status(entity.getStatus())
+                .lockValue(entity.getLockValue())
                 .build();
     }
 }
