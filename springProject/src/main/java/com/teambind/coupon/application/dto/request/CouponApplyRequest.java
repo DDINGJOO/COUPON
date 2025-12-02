@@ -1,36 +1,46 @@
 package com.teambind.coupon.application.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 /**
  * 쿠폰 적용 요청 DTO
- * 사용자 ID와 상품 ID 목록을 받아 쿠폰 적용 가능 여부를 확인합니다.
  */
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class CouponApplyRequest {
+
+    /**
+     * 예약 ID
+     */
+    @NotBlank(message = "예약 ID는 필수입니다")
+    private String reservationId;
 
     /**
      * 사용자 ID
      */
     @NotNull(message = "사용자 ID는 필수입니다")
-    private final Long userId;
+    private Long userId;
 
     /**
-     * 상품 ID 목록 (최대 2개)
+     * 쿠폰 ID
      */
-    @NotNull(message = "상품 ID는 필수입니다")
-    @Size(min = 1, max = 2, message = "상품 ID는 1개 이상 2개 이하여야 합니다")
-    private final List<Long> productIds;
+    @NotNull(message = "쿠폰 ID는 필수입니다")
+    private Long couponId;
 
     /**
      * 주문 총액 (쿠폰 적용 전)
      */
     @NotNull(message = "주문 금액은 필수입니다")
-    private final Long orderAmount;
+    @Positive(message = "주문 금액은 양수여야 합니다")
+    private BigDecimal orderAmount;
 }
