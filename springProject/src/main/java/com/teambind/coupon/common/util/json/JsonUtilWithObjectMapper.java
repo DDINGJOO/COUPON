@@ -1,5 +1,6 @@
-package com.teambind.springproject.common.util.json;
+package com.teambind.coupon.common.util.json;
 
+import com.teambind.springproject.common.util.json.JsonUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
