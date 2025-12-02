@@ -163,4 +163,25 @@ public class CouponIssue {
     public boolean matchesReservation(String reservationId) {
         return this.reservationId != null && this.reservationId.equals(reservationId);
     }
+
+    /**
+     * 쿠폰 롤백 (예약 취소)
+     */
+    public void rollback() {
+        if (status == CouponStatus.RESERVED) {
+            this.status = CouponStatus.ISSUED;
+            this.reservationId = null;
+            this.reservedAt = null;
+        }
+    }
+
+    /**
+     * 쿠폰 만료 여부 확인 (expiredAt 기준)
+     */
+    public boolean isExpired() {
+        if (expiredAt == null) {
+            return false;
+        }
+        return LocalDateTime.now().isAfter(expiredAt);
+    }
 }
