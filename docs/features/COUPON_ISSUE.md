@@ -414,3 +414,115 @@ public void evictUserCouponsCache(Long userId) {
 - 발급 실패율 > 5%
 - 락 획득 실패율 > 10%
 - 발급 시간 > 1초
+
+## 최근 개선사항 (2024-12)
+
+### 1. 선착순(FCFS) 발급 기능 추가
+EVENT 타입으로 선착순 쿠폰 발급 지원
+
+```java
+@Service
+public class FCFSCouponIssueService {
+
+    public CouponIssueResponse issueFCFS(Long policyId, Long userId) {
+        // Redis atomic decrement로 재고 관리
+        Long remaining = redisTemplate.opsForValue()
+            .decrement("coupon:stock:" + policyId);
+
+        if (remaining < 0) {
+            // 재고 복구
+            redisTemplate.opsForValue().increment("coupon:stock:" + policyId);
+            throw new StockExhaustedException("재고 소진");
+        }
+
+        // 쿠폰 발급 처리
+        return issueCoupon(policyId, userId);
+    }
+}
+```
+
+### 2. 배치 발급 성능 최적화
+- 병렬 처리로 대량 발급 성능 개선
+- 분산 락 기반 동시성 제어
+
+```java
+@Service
+public class ConcurrentCouponIssueService {
+
+    public BatchIssueResult issueBatchWithLock(
+        Long policyId,
+        List<Long> userIds,
+        int batchSize
+    ) {
+        return userIds.parallelStream()
+            .map(userId -> issueWithDistributedLock(policyId, userId))
+            .collect(BatchIssueResult.collector());
+    }
+}
+```
+
+### 3. 만료 처리 자동화 개선
+- 배치 단위 처리로 성능 향상
+- 상태만 변경 (삭제하지 않음)
+
+```java
+@Component
+public class CouponExpiryScheduler {
+
+    @Scheduled(cron = "${coupon.scheduler.expiry.cron:0 0 0 * * *}")
+    @Transactional
+    public void processExpiredCoupons() {
+        int batchSize = 1000;
+        int processedCount = 0;
+
+        do {
+            processedCount = jdbcTemplate.update(
+                "UPDATE coupon_issues SET status = 'EXPIRED' " +
+                "WHERE status = 'ISSUED' AND expires_at < NOW() " +
+                "LIMIT ?",
+                batchSize
+            );
+        } while (processedCount == batchSize);
+    }
+}
+```
+
+### 4. Redis 기반 원자적 재고 관리
+Lua 스크립트를 활용한 원자적 재고 차감
+
+```lua
+-- check_and_decrement.lua
+local stock_key = KEYS[1]
+local quantity = tonumber(ARGV[1])
+local current = redis.call('get', stock_key)
+
+if not current then
+    return -1
+end
+
+current = tonumber(current)
+if current >= quantity then
+    redis.call('decrby', stock_key, quantity)
+    return current - quantity
+else
+    return -1
+end
+```
+
+### 5. 예약 타임아웃 자동 해제
+30분 이상 미사용 예약 자동 해제
+
+```java
+@Scheduled(cron = "0 */10 * * * *")
+public void releaseExpiredReservations() {
+    LocalDateTime timeout = LocalDateTime.now().minusMinutes(30);
+
+    int released = jdbcTemplate.update(
+        "UPDATE coupon_issues SET status = 'ISSUED', " +
+        "reservation_id = NULL, reserved_at = NULL " +
+        "WHERE status = 'RESERVED' AND reserved_at < ?",
+        timeout
+    );
+
+    log.info("예약 타임아웃 해제: {}건", released);
+}
