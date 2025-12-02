@@ -2,6 +2,7 @@ package com.teambind.coupon.domain.model;
 
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,6 +25,12 @@ public class CouponPolicy {
     private DiscountPolicy discountPolicy;
     private ItemApplicableRule applicableRule;
     private DistributionType distributionType;
+
+    // 할인 관련 필드
+    private DiscountType discountType;
+    private BigDecimal discountValue;
+    private BigDecimal minimumOrderAmount;
+    private BigDecimal maxDiscountAmount;
 
     private LocalDateTime validFrom;
     private LocalDateTime validUntil;

@@ -56,4 +56,14 @@ public interface LoadCouponIssuePort {
      * 사용자의 특정 상태 쿠폰 개수
      */
     int countByUserIdAndStatus(Long userId, CouponStatus status);
+
+    /**
+     * 사용자의 사용 가능한 쿠폰 목록 조회
+     */
+    List<CouponIssue> findAvailableCouponsByUserId(Long userId);
+
+    /**
+     * ID로 쿠폰 조회
+     */
+    Optional<CouponIssue> findById(Long couponId);
 }

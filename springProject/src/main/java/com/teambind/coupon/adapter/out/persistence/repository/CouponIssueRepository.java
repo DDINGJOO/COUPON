@@ -131,4 +131,9 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssueEntity, 
             @Param("startDate") LocalDateTime startDate,
             @Param("endDate") LocalDateTime endDate
     );
+
+    /**
+     * 사용자 ID와 상태로 쿠폰 목록 조회
+     */
+    List<CouponIssueEntity> findByUserIdAndStatus(Long userId, CouponStatus status);
 }
