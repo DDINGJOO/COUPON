@@ -21,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,9 +77,10 @@ class CouponLockServiceTest {
                 .build();
 
         applyRequest = CouponApplyRequest.builder()
+                .reservationId("RESV-123")
                 .userId(100L)
-                .productIds(Arrays.asList(1L, 2L))
-                .orderAmount(50000L)
+                .couponId(1001L)
+                .orderAmount(BigDecimal.valueOf(50000))
                 .build();
     }
 

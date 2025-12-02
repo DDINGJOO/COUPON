@@ -64,7 +64,7 @@ public class CouponLockService {
                     .couponId(coupon.getId())
                     .userId(request.getUserId())
                     .orderId(null) // 주문 ID는 결제 시 업데이트
-                    .orderAmount(BigDecimal.valueOf(request.getOrderAmount()))
+                    .orderAmount(request.getOrderAmount())
                     .discountAmount(calculateDiscount(policy, request.getOrderAmount()))
                     .reservedAt(LocalDateTime.now())
                     .expiresAt(LocalDateTime.now().plusMinutes(30)) // 30분 유효
@@ -98,8 +98,8 @@ public class CouponLockService {
     /**
      * 할인 금액 계산
      */
-    private BigDecimal calculateDiscount(CouponPolicy policy, Long orderAmount) {
-        BigDecimal amount = BigDecimal.valueOf(orderAmount);
+    private BigDecimal calculateDiscount(CouponPolicy policy, BigDecimal orderAmount) {
+        BigDecimal amount = orderAmount;
 
         if (policy.getDiscountType() == DiscountType.AMOUNT ||
             policy.getDiscountType() == DiscountType.FIXED_AMOUNT) {

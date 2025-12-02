@@ -31,8 +31,8 @@ public class CouponApplyController {
     public ResponseEntity<CouponApplyResponse> applyCoupon(
             @Valid @RequestBody CouponApplyRequest request) {
 
-        log.info("쿠폰 적용 API 요청 - userId: {}, productIds: {}, orderAmount: {}",
-                request.getUserId(), request.getProductIds(), request.getOrderAmount());
+        log.info("쿠폰 적용 API 요청 - userId: {}, couponId: {}, orderAmount: {}",
+                request.getUserId(), request.getCouponId(), request.getOrderAmount());
 
         CouponApplyResponse response = applyCouponUseCase.applyCoupon(request);
 
