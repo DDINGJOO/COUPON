@@ -28,4 +28,11 @@ public interface LoadCouponPolicyPort {
      * 쿠폰 코드 존재 여부 확인
      */
     boolean existsByCode(String couponCode);
+
+    /**
+     * 전체 쿠폰 정책 수 조회
+     */
+    default int countAll() {
+        return 0; // TODO: Repository 구현 필요
+    }
 }
