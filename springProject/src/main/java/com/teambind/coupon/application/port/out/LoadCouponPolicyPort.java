@@ -2,6 +2,8 @@ package com.teambind.coupon.application.port.out;
 
 import com.teambind.coupon.domain.model.CouponPolicy;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -35,4 +37,13 @@ public interface LoadCouponPolicyPort {
     default int countAll() {
         return 0; // TODO: Repository 구현 필요
     }
+
+    /**
+     * 여러 ID로 쿠폰 정책들을 배치 조회
+     * N+1 쿼리 문제 해결을 위한 메서드
+     *
+     * @param policyIds 조회할 정책 ID 목록
+     * @return 정책 ID를 키로 하는 Map
+     */
+    Map<Long, CouponPolicy> loadByIds(List<Long> policyIds);
 }
