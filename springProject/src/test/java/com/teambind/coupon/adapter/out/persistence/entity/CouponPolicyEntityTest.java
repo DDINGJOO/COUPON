@@ -29,7 +29,7 @@ class CouponPolicyEntityTest {
                 .description("테스트용 쿠폰입니다")
                 .discountType(DiscountType.PERCENTAGE)
                 .discountValue(new BigDecimal("10"))
-                .minOrderAmount(new BigDecimal("10000"))
+                .minimumOrderAmount(new BigDecimal("10000"))
                 .maxDiscountAmount(new BigDecimal("5000"))
                 .distributionType(DistributionType.CODE)
                 .validFrom(LocalDateTime.now())
@@ -50,7 +50,7 @@ class CouponPolicyEntityTest {
         assertThat(entity.getDescription()).isEqualTo("테스트용 쿠폰입니다");
         assertThat(entity.getDiscountType()).isEqualTo(DiscountType.PERCENTAGE);
         assertThat(entity.getDiscountValue()).isEqualByComparingTo("10");
-        assertThat(entity.getMinOrderAmount()).isEqualByComparingTo("10000");
+        assertThat(entity.getMinimumOrderAmount()).isEqualByComparingTo("10000");
         assertThat(entity.getMaxDiscountAmount()).isEqualByComparingTo("5000");
         assertThat(entity.getDistributionType()).isEqualTo(DistributionType.CODE);
         assertThat(entity.getMaxIssueCount()).isEqualTo(100);
