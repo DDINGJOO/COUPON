@@ -196,7 +196,71 @@ Development: http://localhost:8080
 }
 ```
 
-#### 2.3 사용자 쿠폰 목록 조회
+#### 2.3 배치 발급 (관리자)
+
+**POST** `/api/coupons/issue/batch`
+
+**Request Body**
+```json
+{
+    "policyId": 1,
+    "userIds": [12345, 12346, 12347],
+    "batchSize": 100,
+    "useDistributedLock": true
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "batchId": "BATCH-2024-0001",
+    "totalRequested": 3,
+    "successCount": 3,
+    "failureCount": 0,
+    "processingTimeMs": 45,
+    "results": [
+        {
+            "userId": 12345,
+            "couponId": 1001,
+            "status": "SUCCESS"
+        }
+    ]
+}
+```
+
+#### 2.4 선착순 발급 (EVENT)
+
+**POST** `/api/coupons/issue/fcfs`
+
+**Request Body**
+```json
+{
+    "policyId": 1,
+    "userId": 12345
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "couponId": 1001,
+    "remainingStock": 499,
+    "position": 501,
+    "issuedAt": "2024-01-01T10:00:00.123Z"
+}
+```
+
+**Response (409 Conflict - 재고 소진)**
+```json
+{
+    "error": "STOCK_EXHAUSTED",
+    "message": "쿠폰 재고가 모두 소진되었습니다",
+    "policyId": 1,
+    "maxStock": 1000
+}
+```
+
+#### 2.5 사용자 쿠폰 목록 조회
 
 **GET** `/api/coupons/users/{userId}`
 
@@ -291,9 +355,101 @@ Development: http://localhost:8080
 }
 ```
 
-### 4. 쿠폰 통계
+### 4. 관리자 API
 
-#### 4.1 실시간 통계
+#### 4.1 재고 동기화
+
+**POST** `/api/admin/coupons/stock/sync`
+
+**Request Body**
+```json
+{
+    "policyId": 1,
+    "forceSync": false
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "policyId": 1,
+    "dbStock": 500,
+    "redisStock": 500,
+    "syncStatus": "SUCCESS",
+    "syncedAt": "2024-01-01T10:00:00"
+}
+```
+
+#### 4.2 만료 쿠폰 처리
+
+**POST** `/api/admin/coupons/expire`
+
+**Request Body**
+```json
+{
+    "batchSize": 1000,
+    "dryRun": false
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "processedCount": 150,
+    "expiredCount": 150,
+    "processingTimeMs": 234,
+    "processedAt": "2024-01-01T00:00:00"
+}
+```
+
+#### 4.3 예약 타임아웃 처리
+
+**POST** `/api/admin/coupons/reservations/timeout`
+
+**Request Body**
+```json
+{
+    "timeoutMinutes": 30,
+    "batchSize": 100
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "processedCount": 25,
+    "releasedCount": 25,
+    "processingTimeMs": 120,
+    "processedAt": "2024-01-01T10:30:00"
+}
+```
+
+#### 4.4 쿠폰 정책 재고 조정
+
+**PATCH** `/api/admin/coupons/policies/{policyId}/stock`
+
+**Request Body**
+```json
+{
+    "adjustment": 1000,
+    "reason": "추가 재고 할당"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "policyId": 1,
+    "previousStock": 1000,
+    "newStock": 2000,
+    "adjustedBy": 1000,
+    "adjustedAt": "2024-01-01T10:00:00"
+}
+```
+
+### 5. 쿠폰 통계
+
+#### 5.1 실시간 통계
 
 **GET** `/api/coupons/statistics/realtime/{policyId}`
 
@@ -313,7 +469,7 @@ Development: http://localhost:8080
 }
 ```
 
-#### 4.2 전체 통계
+#### 5.2 전체 통계
 
 **GET** `/api/coupons/statistics/global`
 
@@ -339,7 +495,7 @@ Development: http://localhost:8080
 }
 ```
 
-#### 4.3 사용자 통계
+#### 5.3 사용자 통계
 
 **GET** `/api/coupons/statistics/user/{userId}`
 
@@ -362,7 +518,7 @@ Development: http://localhost:8080
 }
 ```
 
-#### 4.4 대시보드 요약
+#### 5.4 대시보드 요약
 
 **GET** `/api/coupons/statistics/dashboard`
 
