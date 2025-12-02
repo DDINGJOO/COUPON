@@ -14,6 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * CouponPolicy 도메인 모델 단위 테스트
@@ -370,6 +371,106 @@ class CouponPolicyTest {
 
             // then
             assertThat(eventPolicy.getDistributionType()).isEqualTo(DistributionType.EVENT);
+        }
+    }
+
+    @Nested
+    @DisplayName("쿠폰 정책 남은 발급 수량 수정")
+    class UpdateRemainingQuantity {
+
+        @Test
+        @DisplayName("정상적인 남은 발급 수량 수정")
+        void updateRemainingQuantitySuccess() {
+            // given
+            policy.setCurrentIssueCount(new AtomicInteger(30)); // 30개 이미 발급
+            LocalDateTime beforeUpdate = policy.getUpdatedAt();
+
+            // when
+            policy.updateRemainingQuantity(150);
+
+            // then
+            assertThat(policy.getMaxIssueCount()).isEqualTo(150);
+            assertThat(policy.getUpdatedAt()).isAfter(beforeUpdate);
+        }
+
+        @Test
+        @DisplayName("무제한으로 변경")
+        void updateToUnlimited() {
+            // given
+            policy.setCurrentIssueCount(new AtomicInteger(30));
+
+            // when
+            policy.updateRemainingQuantity(null);
+
+            // then
+            assertThat(policy.getMaxIssueCount()).isNull();
+            assertThat(policy.getUpdatedAt()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("현재 발급 수량보다 적게 설정 시 예외")
+        void failWhenNewQuantityLessThanCurrentIssued() {
+            // given
+            policy.setCurrentIssueCount(new AtomicInteger(50));
+
+            // when & then
+            assertThatThrownBy(() -> policy.updateRemainingQuantity(30))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("새로운 발급 수량(30)은 현재 발급된 수량(50)보다 적을 수 없습니다");
+        }
+
+        @Test
+        @DisplayName("음수 설정 시 예외")
+        void failWhenNegativeQuantity() {
+            // when & then
+            assertThatThrownBy(() -> policy.updateRemainingQuantity(-1))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("발급 수량은 0 이상이어야 합니다");
+        }
+
+        @Test
+        @DisplayName("만료된 쿠폰 수정 시 예외")
+        void failWhenCouponExpired() {
+            // given
+            CouponPolicy expiredPolicy = CouponPolicy.builder()
+                    .validFrom(LocalDateTime.now().minusDays(10))
+                    .validUntil(LocalDateTime.now().minusDays(1))
+                    .isActive(true)
+                    .build();
+            expiredPolicy.setCurrentIssueCount(new AtomicInteger(0));
+
+            // when & then
+            assertThatThrownBy(() -> expiredPolicy.updateRemainingQuantity(100))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("만료된 쿠폰 정책은 수정할 수 없습니다");
+        }
+
+        @Test
+        @DisplayName("0으로 설정 (발급 중단)")
+        void updateToZero() {
+            // given
+            policy.setCurrentIssueCount(new AtomicInteger(0));
+
+            // when
+            policy.updateRemainingQuantity(0);
+
+            // then
+            assertThat(policy.getMaxIssueCount()).isEqualTo(0);
+            assertThat(policy.isIssuable()).isFalse(); // 더 이상 발급 불가
+        }
+
+        @Test
+        @DisplayName("현재 발급 수와 동일하게 설정")
+        void updateToCurrentIssuedCount() {
+            // given
+            policy.setCurrentIssueCount(new AtomicInteger(50));
+
+            // when
+            policy.updateRemainingQuantity(50);
+
+            // then
+            assertThat(policy.getMaxIssueCount()).isEqualTo(50);
+            assertThat(policy.isIssuable()).isFalse(); // 추가 발급 불가
         }
     }
 }

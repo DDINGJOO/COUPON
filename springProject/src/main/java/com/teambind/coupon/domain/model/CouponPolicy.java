@@ -148,4 +148,51 @@ public class CouponPolicy {
     public boolean isNotStarted() {
         return LocalDateTime.now().isBefore(validFrom);
     }
+
+    /**
+     * 남은 발급 수량 업데이트
+     * 생성된 쿠폰 정책의 유일한 수정 가능 필드
+     *
+     * @param newMaxIssueCount 새로운 최대 발급 수량
+     * @throws IllegalArgumentException 현재 발급 수량보다 적게 설정하려는 경우
+     * @throws IllegalStateException 쿠폰이 만료된 경우
+     */
+    public void updateRemainingQuantity(Integer newMaxIssueCount) {
+        if (isExpired()) {
+            throw new IllegalStateException("만료된 쿠폰 정책은 수정할 수 없습니다.");
+        }
+
+        if (newMaxIssueCount == null) {
+            // null은 무제한을 의미
+            this.maxIssueCount = null;
+            this.updatedAt = LocalDateTime.now();
+            return;
+        }
+
+        if (newMaxIssueCount < 0) {
+            throw new IllegalArgumentException("발급 수량은 0 이상이어야 합니다.");
+        }
+
+        int currentIssued = this.currentIssueCount.get();
+        if (newMaxIssueCount < currentIssued) {
+            throw new IllegalArgumentException(
+                String.format("새로운 발급 수량(%d)은 현재 발급된 수량(%d)보다 적을 수 없습니다.",
+                    newMaxIssueCount, currentIssued)
+            );
+        }
+
+        this.maxIssueCount = newMaxIssueCount;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 쿠폰 정책 정보 수정 방지를 위한 검증
+     * 다른 필드 수정 시도 시 예외 발생
+     *
+     * @deprecated 쿠폰 정책은 생성 후 수정 불가. updateRemainingQuantity()만 사용 가능
+     */
+    @Deprecated
+    private void preventModification() {
+        throw new UnsupportedOperationException("쿠폰 정책 정보는 수정할 수 없습니다. 남은 발급 수량만 수정 가능합니다.");
+    }
 }
