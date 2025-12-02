@@ -101,9 +101,15 @@ coupon:
     max-failures: 10
   scheduler:
     timeout:
-      
       enabled: true
       cron: "0 * * * * *"  # 매 1분마다 실행
+    expiry:
+      enabled: true
+      batch-size: 100
+      cron: "0 0 0 * * *"  # 매일 자정에 실행
+    reservation-timeout:
+      enabled: true
+      cron: "0 */5 * * * *"  # 5분마다 실행
 
 kafka:
   topics:

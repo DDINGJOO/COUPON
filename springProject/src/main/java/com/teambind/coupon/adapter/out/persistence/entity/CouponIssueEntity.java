@@ -85,4 +85,27 @@ public class CouponIssueEntity extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "policy_id", insertable = false, updatable = false)
     private CouponPolicyEntity policy;
+
+    /**
+     * 쿠폰 예약 취소 (롤백)
+     * RESERVED 상태를 다시 ISSUED 상태로 변경
+     */
+    public void rollback() {
+        if (this.status == CouponStatus.RESERVED) {
+            this.status = CouponStatus.ISSUED;
+            this.reservationId = null;
+            this.reservedAt = null;
+        }
+    }
+
+    /**
+     * 쿠폰 만료 처리
+     * ISSUED 또는 RESERVED 상태를 EXPIRED로 변경
+     */
+    public void expire() {
+        if (this.status == CouponStatus.ISSUED || this.status == CouponStatus.RESERVED) {
+            this.status = CouponStatus.EXPIRED;
+            this.expiredAt = LocalDateTime.now();
+        }
+    }
 }
