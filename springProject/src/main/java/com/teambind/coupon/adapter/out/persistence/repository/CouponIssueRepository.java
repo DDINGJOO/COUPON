@@ -69,6 +69,30 @@ public interface CouponIssueRepository extends JpaRepository<CouponIssueEntity, 
     List<CouponIssueEntity> findExpiredCoupons(@Param("now") LocalDateTime now);
 
     /**
+     * 만료 대상 쿠폰 페이징 조회 (배치 처리용)
+     */
+    @Query("SELECT ci FROM CouponIssueEntity ci " +
+           "WHERE ci.status IN ('ISSUED', 'RESERVED') " +
+           "AND ci.expiresAt < :now")
+    Page<CouponIssueEntity> findExpiredCouponsWithPaging(
+            @Param("now") LocalDateTime now,
+            Pageable pageable
+    );
+
+    /**
+     * 쿠폰 상태를 만료로 일괄 업데이트
+     */
+    @Modifying
+    @Query("UPDATE CouponIssueEntity ci " +
+           "SET ci.status = 'EXPIRED', ci.expiredAt = :now " +
+           "WHERE ci.id IN :ids " +
+           "AND ci.status IN ('ISSUED', 'RESERVED')")
+    int updateToExpiredBatch(
+            @Param("ids") List<Long> ids,
+            @Param("now") LocalDateTime now
+    );
+
+    /**
      * 쿠폰 ID와 사용자 ID로 조회
      */
     @Query("SELECT ci FROM CouponIssueEntity ci " +
