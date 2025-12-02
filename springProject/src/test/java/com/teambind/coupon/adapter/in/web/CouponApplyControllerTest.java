@@ -44,9 +44,10 @@ class CouponApplyControllerTest {
     void applyCoupon_Success() throws Exception {
         // given
         CouponApplyRequest request = CouponApplyRequest.builder()
+                .reservationId("RESV-123")
                 .userId(123L)
-                .productIds(Arrays.asList(1L, 2L))
-                .orderAmount(100000L)
+                .couponId(1L)
+                .orderAmount(BigDecimal.valueOf(100000))
                 .build();
 
         CouponApplyResponse response = CouponApplyResponse.builder()
@@ -69,8 +70,7 @@ class CouponApplyControllerTest {
                 .andExpect(jsonPath("$.couponId").value("1001"))
                 .andExpect(jsonPath("$.couponName").value("신규 회원 5000원 할인"))
                 .andExpect(jsonPath("$.discountType").value("AMOUNT"))
-                .andExpect(jsonPath("$.discountValue").value(5000))
-                .andExpect(jsonPath("$.reservationId").value("RESV-2024-0001"));
+                .andExpect(jsonPath("$.discountValue").value(5000));
 
         verify(applyCouponUseCase).applyCoupon(any(CouponApplyRequest.class));
     }
@@ -80,9 +80,10 @@ class CouponApplyControllerTest {
     void applyCoupon_NoCouponAvailable() throws Exception {
         // given
         CouponApplyRequest request = CouponApplyRequest.builder()
+                .reservationId("RESV-123")
                 .userId(123L)
-                .productIds(Arrays.asList(1L, 2L))
-                .orderAmount(100000L)
+                .couponId(1L)
+                .orderAmount(BigDecimal.valueOf(100000))
                 .build();
 
         when(applyCouponUseCase.applyCoupon(any(CouponApplyRequest.class)))
@@ -118,7 +119,8 @@ class CouponApplyControllerTest {
         // given
         String requestJson = """
                 {
-                    "productIds": [1, 2],
+                    "reservationId": "RESV-123",
+                    "couponId": 1,
                     "orderAmount": 100000
                 }
                 """;
@@ -132,13 +134,13 @@ class CouponApplyControllerTest {
     }
 
     @Test
-    @DisplayName("요청 검증 실패 - 상품 ID 개수 초과")
-    void applyCoupon_ValidationError_TooManyProducts() throws Exception {
+    @DisplayName("요청 검증 실패 - 쿠폰 ID 누락")
+    void applyCoupon_ValidationError_MissingCouponId() throws Exception {
         // given
         String requestJson = """
                 {
+                    "reservationId": "RESV-123",
                     "userId": 123,
-                    "productIds": [1, 2, 3],
                     "orderAmount": 100000
                 }
                 """;
