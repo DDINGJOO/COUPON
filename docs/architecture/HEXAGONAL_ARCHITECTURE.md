@@ -97,6 +97,7 @@ public class IssueCouponService implements IssueCouponUseCase {
 public interface LoadCouponPolicyPort {
     Optional<CouponPolicy> loadById(Long policyId);
     Optional<CouponPolicy> loadByCodeAndActive(String couponCode);
+    Map<Long, CouponPolicy> loadByIds(List<Long> policyIds); // N+1 쿼리 최적화
 }
 ```
 
@@ -114,6 +115,15 @@ public class CouponPolicyPersistenceAdapter
     public Optional<CouponPolicy> loadById(Long policyId) {
         return repository.findById(policyId)
             .map(mapper::toDomain);
+    }
+
+    @Override
+    public Map<Long, CouponPolicy> loadByIds(List<Long> policyIds) {
+        return repository.findAllById(policyIds).stream()
+            .collect(Collectors.toMap(
+                CouponPolicyJpaEntity::getId,
+                mapper::toDomain
+            ));
     }
 }
 ```
@@ -246,3 +256,47 @@ class CouponIssueIntegrationTest {
 2. **매핑 오버헤드**: 계층 간 데이터 변환 비용
 3. **학습 곡선**: 팀원들의 아키텍처 이해 필요
 4. **과도한 추상화**: 실용성과 균형 필요
+
+## 최근 개선사항
+
+### 1. 트랜잭션 경계 최적화
+- CouponLockService 도입으로 트랜잭션 경계 명확화
+- Spring AOP 프록시 문제 해결
+
+```java
+@Service
+@RequiredArgsConstructor
+public class CouponLockService {
+    @Transactional
+    public CouponApplyResponse tryLockAndApplyCoupon(
+        CouponIssue coupon,
+        CouponApplyRequest request
+    ) {
+        // 트랜잭션 내에서 분산 락 처리
+    }
+}
+```
+
+### 2. N+1 쿼리 문제 해결
+- 배치 로딩 인터페이스 추가
+- Map 기반 조회로 성능 최적화
+
+```java
+// Before: N+1 쿼리
+for (CouponIssue coupon : coupons) {
+    CouponPolicy policy = loadPort.loadById(coupon.getPolicyId());
+}
+
+// After: 배치 로딩
+Map<Long, CouponPolicy> policyMap = loadPort.loadByIds(policyIds);
+```
+
+### 3. 동시성 제어 강화
+- CouponStockService: Redis 기반 원자적 재고 관리
+- ConcurrentCouponIssueService: 분산 락 기반 동시성 제어
+- Lua 스크립트를 통한 원자적 연산
+
+### 4. 스케줄러 도메인 서비스
+- CouponExpiryScheduler: 만료 처리 자동화
+- 배치 처리로 성능 최적화
+- 예약 타임아웃 자동 해제
