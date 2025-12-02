@@ -25,6 +25,7 @@ public class CouponReservation {
     private LocalDateTime reservedAt;   // 예약 일시
     private LocalDateTime expiresAt;    // 예약 만료 일시
     private ReservationStatus status;   // 예약 상태
+    private String lockValue;           // Redis 락 value (안전한 락 해제용)
 
     /**
      * 예약 확정
