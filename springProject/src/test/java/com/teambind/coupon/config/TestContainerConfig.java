@@ -13,13 +13,14 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * TestContainer 설정
  * 통합 테스트를 위한 컨테이너 환경 구성
+ * Docker Compose를 사용하므로 비활성화
  */
-@TestConfiguration
-@Testcontainers
+// @TestConfiguration
+// @Testcontainers
 public class TestContainerConfig {
 
-    @Bean
-    @ServiceConnection
+    // @Bean
+    // @ServiceConnection
     public PostgreSQLContainer<?> postgresContainer() {
         return new PostgreSQLContainer<>(DockerImageName.parse("postgres:15-alpine"))
                 .withDatabaseName("coupon_test_db")
@@ -29,8 +30,8 @@ public class TestContainerConfig {
                 .withReuse(true);
     }
 
-    @Bean
-    @ServiceConnection
+    // @Bean
+    // @ServiceConnection
     public GenericContainer<?> redisContainer() {
         return new GenericContainer<>(DockerImageName.parse("redis:7-alpine"))
                 .withExposedPorts(6379)
@@ -38,8 +39,8 @@ public class TestContainerConfig {
                 .withReuse(true);
     }
 
-    @Bean
-    @ServiceConnection
+    // @Bean
+    // @ServiceConnection
     public KafkaContainer kafkaContainer() {
         return new KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
                 .withKraft()
