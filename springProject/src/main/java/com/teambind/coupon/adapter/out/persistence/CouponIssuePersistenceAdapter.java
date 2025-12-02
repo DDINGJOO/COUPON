@@ -170,4 +170,19 @@ public class CouponIssuePersistenceAdapter implements LoadCouponIssuePort, SaveC
                 .map(mapper::toDomain)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<CouponIssue> findAvailableCouponsByUserId(Long userId) {
+        return repository.findByUserIdAndStatus(userId, CouponStatus.ISSUED)
+                .stream()
+                .map(mapper::toDomain)
+                .filter(coupon -> !coupon.isExpired())
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public Optional<CouponIssue> findById(Long couponId) {
+        return repository.findById(couponId)
+                .map(mapper::toDomain);
+    }
 }
