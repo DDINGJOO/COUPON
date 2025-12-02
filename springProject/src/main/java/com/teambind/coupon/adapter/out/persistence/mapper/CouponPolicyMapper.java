@@ -23,7 +23,7 @@ public class CouponPolicyMapper {
         DiscountPolicy discountPolicy = DiscountPolicy.builder()
                 .discountType(entity.getDiscountType())
                 .discountValue(entity.getDiscountValue())
-                .minOrderAmount(entity.getMinOrderAmount())
+                .minOrderAmount(entity.getMinimumOrderAmount())
                 .maxDiscountAmount(entity.getMaxDiscountAmount())
                 .build();
 
@@ -78,6 +78,7 @@ public class CouponPolicyMapper {
                 .discountType(domain.getDiscountPolicy().getDiscountType())
                 .discountValue(domain.getDiscountPolicy().getDiscountValue())
                 .maxDiscountAmount(domain.getDiscountPolicy().getMaxDiscountAmount())
+                .minimumOrderAmount(domain.getDiscountPolicy().getMinOrderAmount())
                 .applicableRule(ruleJson)
                 .distributionType(domain.getDistributionType())
                 .validFrom(domain.getValidFrom())
@@ -98,6 +99,7 @@ public class CouponPolicyMapper {
         entity.setDiscountType(domain.getDiscountPolicy().getDiscountType());
         entity.setDiscountValue(domain.getDiscountPolicy().getDiscountValue());
         entity.setMaxDiscountAmount(domain.getDiscountPolicy().getMaxDiscountAmount());
+        entity.setMinimumOrderAmount(domain.getDiscountPolicy().getMinOrderAmount());
 
         if (domain.getApplicableRule() != null) {
             CouponPolicyEntity.ItemApplicableRuleJson ruleJson =
