@@ -12,7 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 쿠폰 정책 Persistence Adapter 구현
@@ -98,5 +101,32 @@ public class CouponPolicyPersistenceAdapter implements LoadCouponPolicyPort, Sav
     public boolean decrementStock(Long policyId) {
         int updated = repository.decrementStock(policyId);
         return updated > 0;
+    }
+
+    @Override
+    public Map<Long, CouponPolicy> loadByIds(List<Long> policyIds) {
+        if (policyIds == null || policyIds.isEmpty()) {
+            return Map.of();
+        }
+
+        // 중복 ID 제거
+        List<Long> uniqueIds = policyIds.stream()
+                .distinct()
+                .collect(Collectors.toList());
+
+        // 배치 조회
+        List<CouponPolicyEntity> entities = repository.findAllById(uniqueIds);
+
+        // Map으로 변환하여 반환
+        Map<Long, CouponPolicy> policyMap = entities.stream()
+                .collect(Collectors.toMap(
+                        CouponPolicyEntity::getId,
+                        mapper::toDomain
+                ));
+
+        log.debug("쿠폰 정책 배치 조회 - 요청: {}개, 조회: {}개",
+                uniqueIds.size(), policyMap.size());
+
+        return policyMap;
     }
 }

@@ -10,6 +10,7 @@ import com.teambind.coupon.application.port.out.LoadReservationPort;
 import com.teambind.coupon.application.port.out.SaveCouponIssuePort;
 import com.teambind.coupon.application.port.out.SaveReservationPort;
 import com.teambind.coupon.domain.model.CouponIssue;
+import com.teambind.coupon.domain.model.CouponPolicy;
 import com.teambind.coupon.domain.model.CouponReservation;
 import com.teambind.coupon.domain.model.CouponStatus;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 쿠폰 적용 서비스
@@ -54,10 +57,18 @@ public class ApplyCouponService implements ApplyCouponUseCase {
             return CouponApplyResponse.empty();
         }
 
-        // 상품별로 적용 가능한 쿠폰 찾기
+        // 쿠폰 정책 배치 조회 (N+1 문제 해결)
+        List<Long> policyIds = availableCoupons.stream()
+                .map(CouponIssue::getPolicyId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, CouponPolicy> policyMap = loadCouponPolicyPort.loadByIds(policyIds);
+
+        // 상품별로 적용 가능한 쿠폰 찾기 (정책 맵 활용)
         for (Long productId : request.getProductIds()) {
-            Optional<CouponIssue> applicableCoupon = findApplicableCoupon(
-                    availableCoupons, productId, request.getOrderAmount()
+            Optional<CouponIssue> applicableCoupon = findApplicableCouponWithPolicyMap(
+                    availableCoupons, policyMap, productId, request.getOrderAmount()
             );
 
             if (applicableCoupon.isPresent()) {
@@ -117,8 +128,10 @@ public class ApplyCouponService implements ApplyCouponUseCase {
     }
 
     /**
-     * 적용 가능한 쿠폰 찾기
+     * 적용 가능한 쿠폰 찾기 (기존 - Deprecated)
+     * @deprecated N+1 쿼리 문제로 인해 사용 중지. findApplicableCouponWithPolicyMap 사용 권장
      */
+    @Deprecated
     private Optional<CouponIssue> findApplicableCoupon(
             List<CouponIssue> coupons, Long productId, Long orderAmount) {
 
@@ -127,6 +140,24 @@ public class ApplyCouponService implements ApplyCouponUseCase {
                 .filter(coupon -> !coupon.isExpired())
                 .filter(coupon -> isApplicableToProduct(coupon, productId))
                 .filter(coupon -> isMinimumOrderMet(coupon, orderAmount))
+                .findFirst();
+    }
+
+    /**
+     * 적용 가능한 쿠폰 찾기 (개선 - 배치 조회 활용)
+     * N+1 쿼리 문제 해결을 위해 정책 맵을 사용
+     */
+    private Optional<CouponIssue> findApplicableCouponWithPolicyMap(
+            List<CouponIssue> coupons,
+            Map<Long, CouponPolicy> policyMap,
+            Long productId,
+            Long orderAmount) {
+
+        return coupons.stream()
+                .filter(coupon -> coupon.getStatus() == CouponStatus.ISSUED)
+                .filter(coupon -> !coupon.isExpired())
+                .filter(coupon -> isApplicableToProduct(coupon, productId))
+                .filter(coupon -> isMinimumOrderMetWithPolicy(coupon, policyMap.get(coupon.getPolicyId()), orderAmount))
                 .findFirst();
     }
 
@@ -141,8 +172,10 @@ public class ApplyCouponService implements ApplyCouponUseCase {
     }
 
     /**
-     * 최소 주문 금액 조건 확인
+     * 최소 주문 금액 조건 확인 (기존 - Deprecated)
+     * @deprecated N+1 쿼리 문제로 인해 사용 중지. isMinimumOrderMetWithPolicy 사용 권장
      */
+    @Deprecated
     private boolean isMinimumOrderMet(CouponIssue coupon, Long orderAmount) {
         return loadCouponPolicyPort.loadById(coupon.getPolicyId())
                 .map(policy -> {
@@ -151,6 +184,22 @@ public class ApplyCouponService implements ApplyCouponUseCase {
                            minAmount.compareTo(BigDecimal.valueOf(orderAmount)) <= 0;
                 })
                 .orElse(false);
+    }
+
+    /**
+     * 최소 주문 금액 조건 확인 (개선 - 정책 객체 직접 사용)
+     * N+1 쿼리 문제 해결을 위해 이미 조회된 정책 사용
+     */
+    private boolean isMinimumOrderMetWithPolicy(CouponIssue coupon, CouponPolicy policy, Long orderAmount) {
+        if (policy == null) {
+            log.warn("쿠폰 정책을 찾을 수 없습니다. couponId: {}, policyId: {}",
+                    coupon.getId(), coupon.getPolicyId());
+            return false;
+        }
+
+        BigDecimal minAmount = policy.getMinimumOrderAmount();
+        return minAmount == null ||
+               minAmount.compareTo(BigDecimal.valueOf(orderAmount)) <= 0;
     }
 
 }
