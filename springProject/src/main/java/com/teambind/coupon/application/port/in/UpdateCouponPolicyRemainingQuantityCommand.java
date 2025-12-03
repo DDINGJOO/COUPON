@@ -2,16 +2,18 @@ package com.teambind.coupon.application.port.in;
 
 import com.teambind.coupon.common.SelfValidating;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Value;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
 /**
  * 쿠폰 정책 남은 발급 수량 수정 커맨드
  */
 @Value
 @Builder
+@EqualsAndHashCode(callSuper = false)
 public class UpdateCouponPolicyRemainingQuantityCommand extends SelfValidating<UpdateCouponPolicyRemainingQuantityCommand> {
 
     @NotNull(message = "쿠폰 정책 ID는 필수입니다.")

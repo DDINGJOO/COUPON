@@ -3,10 +3,10 @@ spring:
     name: coupon-service-test
 
   datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:25432/coupon_test_db
-    username: testuser
-    password: testpass
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
     hikari:
       maximum-pool-size: 5
       minimum-idle: 2
@@ -16,7 +16,7 @@ spring:
       ddl-auto: create
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
         show_sql: false
         use_sql_comments: true
