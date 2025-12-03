@@ -1,0 +1,99 @@
+spring:
+  application:
+    name: coupon-service-e2e
+
+  # 데이터베이스 설정 (Docker Compose 환경)
+  datasource:
+    url: jdbc:postgresql://localhost:25432/coupon_db
+    username: coupon_user
+    password: coupon_pass_2024
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 10000
+      maximum-pool-size: 20
+      minimum-idle: 5
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # E2E 테스트는 매번 스키마 재생성
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        show_sql: false  # E2E에서는 SQL 로그 비활성화
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
+
+  # Redis 설정
+  data:
+    redis:
+      host: localhost
+      port: 26379
+      timeout: 10000
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
+
+  # Kafka 설정
+  kafka:
+    bootstrap-servers: localhost:39092
+    consumer:
+      group-id: coupon-e2e-test
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: 1
+      retries: 1
+
+  # 캐시 설정
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300000  # 5분
+      cache-null-values: false
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.teambind.coupon: DEBUG
+    org.springframework.web: INFO
+    org.springframework.data: INFO
+    org.hibernate: WARN
+    io.restassured: INFO
+  pattern:
+    console: "[E2E] %d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# 애플리케이션 설정
+app:
+  coupon:
+    reservation:
+      timeout-minutes: 5
+    lock:
+      wait-time: 5
+      lease-time: 10
+    cache:
+      statistics:
+        ttl: 60
+
+# 테스트 설정
+test:
+  e2e:
+    timeout: 30000  # 30초
+    max-response-time: 1000  # 1초
+    concurrent-users: 10
+    data:
+      users: 5
+      policies: 5
+      issues-per-user: 50
