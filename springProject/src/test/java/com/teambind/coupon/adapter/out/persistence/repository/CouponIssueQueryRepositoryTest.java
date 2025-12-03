@@ -8,9 +8,10 @@ import com.teambind.coupon.domain.model.DiscountType;
 import com.teambind.coupon.domain.model.DistributionType;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -25,13 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * CouponIssueQueryRepository 통합 테스트
  * PostgreSQL TestContainer 사용
  */
-@DataJpaTest
+@SpringBootTest
 @Testcontainers
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@TestPropertySource(properties = {
-        "spring.datasource.url=${spring.datasource.url}",
-        "spring.jpa.hibernate.ddl-auto=create-drop"
-})
+@Transactional
 @DisplayName("CouponIssueQueryRepository 통합 테스트")
 class CouponIssueQueryRepositoryTest {
 
@@ -40,6 +37,13 @@ class CouponIssueQueryRepositoryTest {
             .withDatabaseName("coupon_test")
             .withUsername("test")
             .withPassword("test");
+
+    @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+    }
 
     @Autowired
     private CouponIssueQueryRepository couponIssueQueryRepository;
@@ -53,13 +57,6 @@ class CouponIssueQueryRepositoryTest {
     private Long userId;
     private CouponPolicyEntity policy1;
     private CouponPolicyEntity policy2;
-
-    @BeforeAll
-    static void beforeAll() {
-        System.setProperty("spring.datasource.url", postgres.getJdbcUrl());
-        System.setProperty("spring.datasource.username", postgres.getUsername());
-        System.setProperty("spring.datasource.password", postgres.getPassword());
-    }
 
     @BeforeEach
     void setUp() {
@@ -181,6 +178,7 @@ class CouponIssueQueryRepositoryTest {
             // given
             // 만료 임박 쿠폰 추가 생성
             CouponIssueEntity expiringCoupon = CouponIssueEntity.builder()
+                    .id(System.currentTimeMillis() * 1000 + 300)
                     .userId(userId)
                     .policyId(policy1.getId())
                     .status(CouponStatus.ISSUED)
@@ -265,8 +263,10 @@ class CouponIssueQueryRepositoryTest {
     private void createCouponIssues() {
         // ISSUED 상태 쿠폰
         for (int i = 0; i < 3; i++) {
+            long issueId = System.currentTimeMillis() * 1000 + i;
             couponIssueRepository.save(
                     CouponIssueEntity.builder()
+                            .id(issueId)
                             .userId(userId)
                             .policyId(policy1.getId())
                             .status(CouponStatus.ISSUED)
@@ -279,6 +279,7 @@ class CouponIssueQueryRepositoryTest {
         // USED 상태 쿠폰
         couponIssueRepository.save(
                 CouponIssueEntity.builder()
+                        .id(System.currentTimeMillis() * 1000 + 100)
                         .userId(userId)
                         .policyId(policy2.getId())
                         .status(CouponStatus.USED)
@@ -292,6 +293,7 @@ class CouponIssueQueryRepositoryTest {
         // EXPIRED 상태 쿠폰
         couponIssueRepository.save(
                 CouponIssueEntity.builder()
+                        .id(System.currentTimeMillis() * 1000 + 200)
                         .userId(userId)
                         .policyId(policy1.getId())
                         .status(CouponStatus.EXPIRED)
