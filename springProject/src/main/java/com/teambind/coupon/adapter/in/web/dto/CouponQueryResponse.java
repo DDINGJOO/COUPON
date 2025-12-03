@@ -99,11 +99,7 @@ public class CouponQueryResponse {
                     .discountValue(projection.getDiscountValue())
                     .minimumOrderAmount(projection.getMinimumOrderAmount())
                     .maxDiscountAmount(projection.getMaxDiscountAmount())
-                    .applicableProductIds(
-                            projection.getApplicableProductIds() != null
-                                    ? Arrays.asList(projection.getApplicableProductIds())
-                                    : null
-                    )
+                    .applicableProductIds(null) // TODO: JSONB 파싱 필요
                     .distributionType(projection.getDistributionType())
                     .isAvailable(projection.getIsAvailable() != null && projection.getIsAvailable())
                     .remainingDays(calculateRemainingDays(projection.getExpiresAt()))

@@ -304,7 +304,7 @@ class CouponQueryServiceTest {
                 @Override
                 public BigDecimal getMaxDiscountAmount() { return BigDecimal.valueOf(5000); }
                 @Override
-                public Long[] getApplicableProductIds() { return new Long[]{1L, 2L, 3L}; }
+                public String getApplicableRule() { return "{\"applicableItemIds\":[1,2,3]}"; }
                 @Override
                 public String getDistributionType() { return "CODE"; }
                 @Override

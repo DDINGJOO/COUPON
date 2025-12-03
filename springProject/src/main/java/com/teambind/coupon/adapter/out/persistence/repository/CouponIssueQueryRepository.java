@@ -1,6 +1,7 @@
 package com.teambind.coupon.adapter.out.persistence.repository;
 
 import com.teambind.coupon.adapter.out.persistence.projection.CouponIssueProjection;
+import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -12,7 +13,7 @@ import java.util.List;
  * PostgreSQL Native Query를 사용한 커서 기반 페이지네이션 및 필터링
  */
 @Repository
-public interface CouponIssueQueryRepository {
+public interface CouponIssueQueryRepository extends JpaRepository<com.teambind.coupon.adapter.out.persistence.entity.CouponIssueEntity, Long> {
 
     /**
      * 유저의 쿠폰 목록을 커서 기반 페이지네이션으로 조회
@@ -44,7 +45,7 @@ public interface CouponIssueQueryRepository {
                 cp.discount_value,
                 cp.minimum_order_amount,
                 cp.max_discount_amount,
-                cp.applicable_product_ids,
+                cp.applicable_rule::text AS applicable_rule,
                 cp.distribution_type,
                 CASE
                     WHEN ci.status = 'ISSUED' AND ci.expires_at > CURRENT_TIMESTAMP THEN true
@@ -56,13 +57,17 @@ public interface CouponIssueQueryRepository {
                 AND (:cursor IS NULL OR ci.id < :cursor)
                 AND (
                     :status IS NULL
-                    OR ci.status = CAST(:status AS coupon_status)
+                    OR ci.status = :status
                     OR (:status = 'AVAILABLE' AND ci.status = 'ISSUED' AND ci.expires_at > CURRENT_TIMESTAMP)
                 )
                 AND (
                     :productIds IS NULL
-                    OR cp.applicable_product_ids IS NULL
-                    OR cp.applicable_product_ids && CAST(:productIds AS bigint[])
+                    OR cp.applicable_rule IS NULL
+                    OR cp.applicable_rule->'applicableItemIds' IS NULL
+                    OR EXISTS (
+                        SELECT 1 FROM jsonb_array_elements_text(cp.applicable_rule->'applicableItemIds') AS item
+                        WHERE item::bigint = ANY(CAST(:productIds AS bigint[]))
+                    )
                 )
             ORDER BY
                 CASE WHEN :status = 'AVAILABLE' THEN ci.expires_at END ASC,
@@ -94,13 +99,17 @@ public interface CouponIssueQueryRepository {
         WHERE ci.user_id = :userId
             AND (
                 :status IS NULL
-                OR ci.status = CAST(:status AS coupon_status)
+                OR ci.status = :status
                 OR (:status = 'AVAILABLE' AND ci.status = 'ISSUED' AND ci.expires_at > CURRENT_TIMESTAMP)
             )
             AND (
                 :productIds IS NULL
-                OR cp.applicable_product_ids IS NULL
-                OR cp.applicable_product_ids && CAST(:productIds AS bigint[])
+                OR cp.applicable_rule IS NULL
+                OR cp.applicable_rule->'applicableItemIds' IS NULL
+                OR EXISTS (
+                    SELECT 1 FROM jsonb_array_elements_text(cp.applicable_rule->'applicableItemIds') AS item
+                    WHERE item::bigint = ANY(CAST(:productIds AS bigint[]))
+                )
             )
         """, nativeQuery = true)
     Long countUserCoupons(
@@ -136,7 +145,7 @@ public interface CouponIssueQueryRepository {
             cp.discount_value,
             cp.minimum_order_amount,
             cp.max_discount_amount,
-            cp.applicable_product_ids,
+            cp.applicable_rule::text AS applicable_rule,
             cp.distribution_type,
             true AS is_available
         FROM coupon_issues ci
@@ -144,7 +153,7 @@ public interface CouponIssueQueryRepository {
         WHERE ci.user_id = :userId
             AND ci.status = 'ISSUED'
             AND ci.expires_at > CURRENT_TIMESTAMP
-            AND ci.expires_at <= CURRENT_TIMESTAMP + INTERVAL ':daysUntilExpiry days'
+            AND ci.expires_at <= CURRENT_TIMESTAMP + CAST(:daysUntilExpiry || ' days' AS INTERVAL)
         ORDER BY ci.expires_at ASC
         LIMIT :limit
         """, nativeQuery = true)

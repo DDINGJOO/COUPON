@@ -34,7 +34,8 @@ class SecureRandomCodeGeneratorTest {
         // then
         assertThat(code).isNotEmpty();
         assertThat(code).hasSize(19); // 16자리 + 3개의 대시(-)
-        assertThat(code).matches("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+        // Base64 URL-safe 인코딩 문자 포함 가능 (A-Z, 0-9, -, _)
+        assertThat(code).matches("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
     }
 
     @Test
@@ -52,7 +53,7 @@ class SecureRandomCodeGeneratorTest {
         String[] parts = code.split(":");
         assertThat(parts).hasSize(2);
         assertThat(parts[0]).isEqualTo("SECURE");
-        assertThat(parts[1]).matches("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+        assertThat(parts[1]).matches("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
     }
 
     @Test
@@ -64,7 +65,7 @@ class SecureRandomCodeGeneratorTest {
         // then
         assertThat(code).isNotEmpty();
         assertThat(code).doesNotContain(":");
-        assertThat(code).matches("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+        assertThat(code).matches("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
     }
 
     @Test
@@ -76,7 +77,7 @@ class SecureRandomCodeGeneratorTest {
         // then
         assertThat(code).isNotEmpty();
         assertThat(code).doesNotContain(":");
-        assertThat(code).matches("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+        assertThat(code).matches("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
     }
 
     @Test
@@ -106,7 +107,7 @@ class SecureRandomCodeGeneratorTest {
         Set<String> uniqueCodes = new HashSet<>();
         for (String code : batch) {
             assertThat(code).isNotEmpty();
-            assertThat(code).matches("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+            assertThat(code).matches("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
             uniqueCodes.add(code);
         }
         assertThat(uniqueCodes).hasSize(10);
@@ -190,7 +191,7 @@ class SecureRandomCodeGeneratorTest {
     @DisplayName("코드 형식 검증")
     void generate_Format() {
         // given
-        Pattern pattern = Pattern.compile("^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$");
+        Pattern pattern = Pattern.compile("^[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}-[A-Z0-9_-]{4}$");
 
         // when
         for (int i = 0; i < 10; i++) {

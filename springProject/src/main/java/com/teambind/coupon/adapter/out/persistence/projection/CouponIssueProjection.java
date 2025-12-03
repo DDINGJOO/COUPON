@@ -29,7 +29,7 @@ public interface CouponIssueProjection {
     BigDecimal getDiscountValue();
     BigDecimal getMinimumOrderAmount();
     BigDecimal getMaxDiscountAmount();
-    Long[] getApplicableProductIds();
+    String getApplicableRule();  // JSONB를 String으로 받음
     String getDistributionType();
 
     // 계산 필드
