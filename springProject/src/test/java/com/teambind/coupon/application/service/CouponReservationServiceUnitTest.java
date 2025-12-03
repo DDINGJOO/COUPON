@@ -52,7 +52,7 @@ class CouponReservationServiceUnitTest {
         // @Value 필드 직접 주입
         ReflectionTestUtils.setField(reservationService, "reservationTimeoutMinutes", 10);
 
-        command = new ReserveCouponCommand("RESV-123", 100L, 1L);
+        command = ReserveCouponCommand.of("RESV-123", 100L, 1L, BigDecimal.valueOf(50000));
 
         availableCoupon = CouponIssue.builder()
                 .id(1L)
@@ -112,7 +112,7 @@ class CouponReservationServiceUnitTest {
     @DisplayName("쿠폰 예약 실패 - 예약 ID가 없음")
     void reserveCoupon_InvalidReservationId() {
         // given
-        ReserveCouponCommand invalidCommand = new ReserveCouponCommand(null, 100L, 1L);
+        ReserveCouponCommand invalidCommand = ReserveCouponCommand.of(null, 100L, 1L, BigDecimal.valueOf(50000));
 
         // when
         CouponReservationResult result = reservationService.reserveCoupon(invalidCommand);
@@ -130,7 +130,7 @@ class CouponReservationServiceUnitTest {
     @DisplayName("쿠폰 예약 실패 - 빈 예약 ID")
     void reserveCoupon_EmptyReservationId() {
         // given
-        ReserveCouponCommand emptyCommand = new ReserveCouponCommand("  ", 100L, 1L);
+        ReserveCouponCommand emptyCommand = ReserveCouponCommand.of("  ", 100L, 1L, BigDecimal.valueOf(50000));
 
         // when
         CouponReservationResult result = reservationService.reserveCoupon(emptyCommand);
@@ -211,7 +211,7 @@ class CouponReservationServiceUnitTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getMessage()).contains("예약할 수 없는 상태");
+        assertThat(result.getMessage()).contains("이미 사용된 쿠폰");
 
         verify(saveCouponIssuePort, never()).save(any());
     }
@@ -237,7 +237,7 @@ class CouponReservationServiceUnitTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getMessage()).contains("예약할 수 없는 상태");
+        assertThat(result.getMessage()).contains("만료된 쿠폰");
 
         verify(saveCouponIssuePort, never()).save(any());
     }
@@ -264,7 +264,7 @@ class CouponReservationServiceUnitTest {
         // then
         assertThat(result).isNotNull();
         assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getMessage()).contains("예약할 수 없는 상태");
+        assertThat(result.getMessage()).contains("이미 예약된 쿠폰");
 
         verify(saveCouponIssuePort, never()).save(any());
     }
