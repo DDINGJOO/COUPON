@@ -13,11 +13,17 @@
 ### 토픽 설정
 | 토픽명 | 파티션 | 복제 계수 | 보존 기간 |
 |-------|--------|----------|----------|
-| coupon.issued | 3 | 2 | 7일 |
-| coupon.used | 3 | 2 | 7일 |
-| coupon.reserved | 3 | 2 | 1일 |
-| payment.completed | 3 | 2 | 7일 |
-| payment.failed | 3 | 2 | 7일 |
+| coupon.issued.v1 | 3 | 2 | 7일 |
+| coupon.used.v1 | 3 | 2 | 7일 |
+| coupon.reserved.v1 | 3 | 2 | 1일 |
+| payment.completed.v1 | 3 | 2 | 7일 |
+| payment.failed.v1 | 3 | 2 | 7일 |
+
+### 컨슈머 설정
+- **동시 처리 스레드**: 10 (기존 3에서 증가)
+- **ACK 모드**: MANUAL (수동 확인)
+- **재시도 정책**: 비즈니스 로직 실패 시 재처리
+- **멱등성**: reservationId/orderId 기반 중복 처리 방지
 
 ## 발행 이벤트 (Published Events)
 
@@ -195,7 +201,7 @@
 
 ### 1. PaymentCompletedEvent
 
-**토픽**: `payment.completed`
+**토픽**: `payment.completed.v1`
 
 **설명**: 결제가 완료되었을 때 수신
 
@@ -224,13 +230,15 @@
 ```
 
 **처리 로직**
-1. 예약된 쿠폰 상태를 USED로 변경
-2. 사용 일시 기록
-3. CouponUsedEvent 발행
+1. 멱등성 체크 (이미 처리된 orderId인지 확인)
+2. 예약된 쿠폰 상태를 USED로 변경
+3. 사용 일시 기록
+4. CouponUsedEvent 발행
+5. 성공 시에만 ACK (실패 시 재처리)
 
 ### 2. PaymentFailedEvent
 
-**토픽**: `payment.failed`
+**토픽**: `payment.failed.v1`
 
 **설명**: 결제가 실패했을 때 수신
 

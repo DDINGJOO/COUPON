@@ -9,8 +9,9 @@ Development: http://localhost:8080
 ```
 
 ### 인증
-- Bearer Token (JWT)
-- Header: `Authorization: Bearer <token>`
+- API Gateway에서 인증 처리 후 사용자 정보를 헤더로 전달
+- Header: `X-User-Id: {userId}`
+- Header: `X-User-Role: {userRole}` (ADMIN, USER)
 
 ### 공통 응답 형식
 
@@ -262,7 +263,10 @@ Development: http://localhost:8080
 
 #### 2.5 사용자 쿠폰 목록 조회
 
-**GET** `/api/coupons/users/{userId}`
+**GET** `/api/coupons/users/me`
+
+**Required Headers**
+- `X-User-Id: {userId}`
 
 **Query Parameters**
 - `status`: ISSUED | RESERVED | USED | EXPIRED | CANCELLED
@@ -297,11 +301,14 @@ Development: http://localhost:8080
 
 **POST** `/api/coupons/reserve`
 
+**Required Headers**
+- `X-User-Id: {userId}`
+
 **Request Body**
 ```json
 {
     "couponId": 1001,
-    "orderId": "ORDER-2024-0001",
+    "reservationId": "RESV-2024-0001",
     "orderAmount": 100000
 }
 ```
