@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -69,7 +70,7 @@ class CouponReservationServiceTest {
         void reserveIssuedCoupon() {
             // given
             String reservationId = UUID.randomUUID().toString();
-            command = ReserveCouponCommand.of(reservationId, 100L, issuedCoupon.getId());
+            command = ReserveCouponCommand.of(reservationId, 100L, issuedCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(issuedCoupon.getId(), 100L))
                     .thenReturn(Optional.of(issuedCoupon));
@@ -99,7 +100,7 @@ class CouponReservationServiceTest {
             // given
             String reservationId = UUID.randomUUID().toString();
             CouponIssue reservedCoupon = CouponIssueFixture.createReservedCoupon(100L, policy, reservationId);
-            command = ReserveCouponCommand.of(reservationId, 100L, reservedCoupon.getId());
+            command = ReserveCouponCommand.of(reservationId, 100L, reservedCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(reservedCoupon.getId(), 100L))
                     .thenReturn(Optional.of(reservedCoupon));
@@ -122,7 +123,7 @@ class CouponReservationServiceTest {
         @DisplayName("존재하지 않는 쿠폰 예약 시도")
         void reserveNonExistentCoupon() {
             // given
-            command = ReserveCouponCommand.of("reservation-123", 100L, 9999L);
+            command = ReserveCouponCommand.of("reservation-123", 100L, 9999L, BigDecimal.valueOf(50000));
             when(loadCouponIssuePort.loadByIdAndUserId(9999L, 100L))
                     .thenReturn(Optional.empty());
 
@@ -140,7 +141,7 @@ class CouponReservationServiceTest {
         void reserveOtherUserCoupon() {
             // given
             CouponIssue otherUserCoupon = CouponIssueFixture.createIssuedCoupon(200L, policy);
-            command = ReserveCouponCommand.of("reservation-123", 100L, otherUserCoupon.getId());
+            command = ReserveCouponCommand.of("reservation-123", 100L, otherUserCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(otherUserCoupon.getId(), 100L))
                     .thenReturn(Optional.empty()); // 다른 사용자의 쿠폰이므로 조회 안됨
@@ -159,7 +160,7 @@ class CouponReservationServiceTest {
             // given
             String existingReservationId = "existing-reservation";
             CouponIssue reservedCoupon = CouponIssueFixture.createReservedCoupon(100L, policy, existingReservationId);
-            command = ReserveCouponCommand.of("new-reservation", 100L, reservedCoupon.getId());
+            command = ReserveCouponCommand.of("new-reservation", 100L, reservedCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(reservedCoupon.getId(), 100L))
                     .thenReturn(Optional.of(reservedCoupon));
@@ -169,7 +170,7 @@ class CouponReservationServiceTest {
 
             // then
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("이미 예약된 쿠폰");
             verify(saveCouponIssuePort, never()).save(any());
         }
 
@@ -178,7 +179,7 @@ class CouponReservationServiceTest {
         void reserveUsedCoupon() {
             // given
             CouponIssue usedCoupon = CouponIssueFixture.createUsedCoupon(100L, policy, "order-123");
-            command = ReserveCouponCommand.of("reservation-123", 100L, usedCoupon.getId());
+            command = ReserveCouponCommand.of("reservation-123", 100L, usedCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(usedCoupon.getId(), 100L))
                     .thenReturn(Optional.of(usedCoupon));
@@ -188,7 +189,7 @@ class CouponReservationServiceTest {
 
             // then
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("이미 사용된 쿠폰");
         }
 
         @Test
@@ -196,7 +197,7 @@ class CouponReservationServiceTest {
         void reserveExpiredCoupon() {
             // given
             CouponIssue expiredCoupon = CouponIssueFixture.createExpiredCoupon(100L, policy);
-            command = ReserveCouponCommand.of("reservation-123", 100L, expiredCoupon.getId());
+            command = ReserveCouponCommand.of("reservation-123", 100L, expiredCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(expiredCoupon.getId(), 100L))
                     .thenReturn(Optional.of(expiredCoupon));
@@ -206,7 +207,7 @@ class CouponReservationServiceTest {
 
             // then
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("만료된 쿠폰");
         }
 
         @Test
@@ -214,7 +215,7 @@ class CouponReservationServiceTest {
         void reserveCancelledCoupon() {
             // given
             CouponIssue cancelledCoupon = CouponIssueFixture.createCancelledCoupon(100L, policy);
-            command = ReserveCouponCommand.of("reservation-123", 100L, cancelledCoupon.getId());
+            command = ReserveCouponCommand.of("reservation-123", 100L, cancelledCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(cancelledCoupon.getId(), 100L))
                     .thenReturn(Optional.of(cancelledCoupon));
@@ -224,7 +225,7 @@ class CouponReservationServiceTest {
 
             // then
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("취소된 쿠폰");
         }
     }
 
@@ -240,7 +241,7 @@ class CouponReservationServiceTest {
 
             // given - 첫 번째 예약
             String firstReservationId = "reservation-1";
-            ReserveCouponCommand firstCommand = ReserveCouponCommand.of(firstReservationId, 100L, issuedCoupon.getId());
+            ReserveCouponCommand firstCommand = ReserveCouponCommand.of(firstReservationId, 100L, issuedCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(issuedCoupon.getId(), 100L))
                     .thenReturn(Optional.of(issuedCoupon));
@@ -258,14 +259,14 @@ class CouponReservationServiceTest {
             // given - 두 번째 예약 시도 (이미 예약된 상태)
             issuedCoupon.reserve(firstReservationId); // 상태 변경
             String secondReservationId = "reservation-2";
-            ReserveCouponCommand secondCommand = ReserveCouponCommand.of(secondReservationId, 100L, issuedCoupon.getId());
+            ReserveCouponCommand secondCommand = ReserveCouponCommand.of(secondReservationId, 100L, issuedCoupon.getId(), BigDecimal.valueOf(50000));
 
             // when - 두 번째 예약 실패
             CouponReservationResult secondResult = reservationService.reserveCoupon(secondCommand);
 
             // then
             assertThat(secondResult.isSuccess()).isFalse();
-            assertThat(secondResult.getMessage()).contains("예약할 수 없는 상태");
+            assertThat(secondResult.getMessage()).contains("이미 예약된 쿠폰");
         }
 
         @Test
@@ -287,7 +288,7 @@ class CouponReservationServiceTest {
                 when(saveCouponIssuePort.save(any(CouponIssue.class)))
                         .thenAnswer(inv -> inv.getArgument(0));
 
-                ReserveCouponCommand cmd = ReserveCouponCommand.of(reservationId, userId, userCoupon.getId());
+                ReserveCouponCommand cmd = ReserveCouponCommand.of(reservationId, userId, userCoupon.getId(), BigDecimal.valueOf(50000));
                 CouponReservationResult result = reservationService.reserveCoupon(cmd);
 
                 // 각 사용자의 쿠폰 예약은 성공해야 함
@@ -305,7 +306,7 @@ class CouponReservationServiceTest {
         @DisplayName("빈 예약 ID 처리")
         void emptyReservationId() {
             // given
-            command = ReserveCouponCommand.of("", 100L, issuedCoupon.getId());
+            command = ReserveCouponCommand.of("", 100L, issuedCoupon.getId(), BigDecimal.valueOf(50000));
             // 빈 예약 ID는 조기 반환되므로 mock 설정 불필요
 
             // when
@@ -367,7 +368,7 @@ class CouponReservationServiceTest {
             CouponIssue nearTimeoutCoupon = CouponIssueFixture.createNearTimeoutReservedCoupon(
                     100L, policy, "old-reservation"
             );
-            command = ReserveCouponCommand.of("new-reservation", 100L, nearTimeoutCoupon.getId());
+            command = ReserveCouponCommand.of("new-reservation", 100L, nearTimeoutCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(nearTimeoutCoupon.getId(), 100L))
                     .thenReturn(Optional.of(nearTimeoutCoupon));
@@ -377,7 +378,7 @@ class CouponReservationServiceTest {
 
             // then - 아직 타임아웃 안됨, 기존 예약 유지
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("이미 예약된 쿠폰");
         }
 
         @Test
@@ -387,7 +388,7 @@ class CouponReservationServiceTest {
             CouponIssue timeoutCoupon = CouponIssueFixture.createTimeoutReservedCoupon(
                     100L, policy, "old-reservation"
             );
-            command = ReserveCouponCommand.of("new-reservation", 100L, timeoutCoupon.getId());
+            command = ReserveCouponCommand.of("new-reservation", 100L, timeoutCoupon.getId(), BigDecimal.valueOf(50000));
 
             when(loadCouponIssuePort.loadByIdAndUserId(timeoutCoupon.getId(), 100L))
                     .thenReturn(Optional.of(timeoutCoupon));
@@ -397,7 +398,7 @@ class CouponReservationServiceTest {
 
             // then - 타임아웃 스케줄러가 처리하기 전까지는 예약 상태 유지
             assertThat(result.isSuccess()).isFalse();
-            assertThat(result.getMessage()).contains("예약할 수 없는 상태입니다");
+            assertThat(result.getMessage()).contains("이미 예약된 쿠폰");
         }
     }
 }
