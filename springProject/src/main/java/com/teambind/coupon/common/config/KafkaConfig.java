@@ -1,6 +1,6 @@
 package com.teambind.coupon.common.config;
 
-import com.teambind.coupon.adapter.in.kafka.dto.PaymentCompletedEvent;
+import com.teambind.coupon.adapter.in.message.dto.PaymentCompletedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
