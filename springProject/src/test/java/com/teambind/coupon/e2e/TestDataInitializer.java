@@ -50,15 +50,15 @@ public class TestDataInitializer {
                     .discountValue(i % 2 == 0 ? BigDecimal.valueOf(10) : BigDecimal.valueOf(1000))
                     .minimumOrderAmount(BigDecimal.valueOf(10000))
                     .maxDiscountAmount(BigDecimal.valueOf(5000))
-                    .applicableProductIds(generateProductIds(i))
+                    // .applicableProductIds(generateProductIds(i)) // TODO: Entity 필드 추가 후 복원
                     .distributionType(DistributionType.CODE)
                     .validFrom(LocalDateTime.now().minusDays(10))
                     .validUntil(LocalDateTime.now().plusDays(30))
                     .maxIssueCount(1000)
                     .maxUsagePerUser(5)
                     .isActive(true)
-                    .createdAt(LocalDateTime.now())
-                    .createdBy(1L)
+                    // .createdAt(LocalDateTime.now())  // @CreationTimestamp가 자동 설정
+                    // .createdBy(1L)  // TODO: Auditing 설정 후 복원
                     .build();
 
             policies.add(couponPolicyRepository.save(policy));

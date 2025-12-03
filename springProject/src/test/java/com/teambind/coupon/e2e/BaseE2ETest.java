@@ -36,7 +36,7 @@ public abstract class BaseE2ETest {
     // Docker Compose 컨테이너 정의
     @Container
     private static final DockerComposeContainer<?> dockerCompose =
-            new DockerComposeContainer<>(new File("../docker-compose.yml"))
+            new DockerComposeContainer<>(new File("../../docker-compose.yml"))
                     .withExposedService("postgres", 5432,
                             Wait.forHealthcheck().withStartupTimeout(Duration.ofMinutes(2)))
                     .withExposedService("redis", 6379,

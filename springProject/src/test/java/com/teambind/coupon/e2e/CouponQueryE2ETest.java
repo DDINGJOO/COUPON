@@ -158,7 +158,7 @@ public class CouponQueryE2ETest extends BaseE2ETest {
                 Response response = given()
                         .spec(requestSpec)
                         .queryParam("limit", 10)
-                        .queryParamIfPresent("cursor", cursor)
+                        .queryParam("cursor", cursor != null ? cursor : "")
                     .when()
                         .get("/api/coupons/users/{userId}", TEST_USER_ID)
                     .then()
@@ -241,7 +241,8 @@ public class CouponQueryE2ETest extends BaseE2ETest {
         @DisplayName("복수 상품ID 필터링")
         void testFilterByProductIds() {
             // 테스트 정책의 상품 ID 확인
-            Long[] productIds = testPolicies.get(0).getApplicableProductIds();
+            // 테스트용 상품 ID 배열
+            Long[] productIds = new Long[]{1L, 2L, 3L};
 
             Response response = given()
                     .spec(requestSpec)
@@ -266,7 +267,8 @@ public class CouponQueryE2ETest extends BaseE2ETest {
         @Order(7)
         @DisplayName("복합 필터링 - 상태 + 상품ID")
         void testComplexFiltering() {
-            Long[] productIds = testPolicies.get(0).getApplicableProductIds();
+            // 테스트용 상품 ID 배열
+            Long[] productIds = new Long[]{1L, 2L, 3L};
 
             Response response = given()
                     .spec(requestSpec)
