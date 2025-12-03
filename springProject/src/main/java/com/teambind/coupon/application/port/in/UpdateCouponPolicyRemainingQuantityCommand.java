@@ -1,18 +1,18 @@
 package com.teambind.coupon.application.port.in;
 
-import com.teambind.coupon.common.SelfValidating;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Builder;
 import lombok.Value;
 
-import javax.validation.constraints.NotNull;
-import javax.validation.constraints.PositiveOrZero;
+
 
 /**
  * 쿠폰 정책 남은 발급 수량 수정 커맨드
  */
 @Value
 @Builder
-public class UpdateCouponPolicyRemainingQuantityCommand extends SelfValidating<UpdateCouponPolicyRemainingQuantityCommand> {
+public class UpdateCouponPolicyRemainingQuantityCommand {
 
     @NotNull(message = "쿠폰 정책 ID는 필수입니다.")
     Long couponPolicyId;
@@ -24,16 +24,4 @@ public class UpdateCouponPolicyRemainingQuantityCommand extends SelfValidating<U
     Long modifiedBy;
 
     String reason; // 수정 사유 (선택적)
-
-    public UpdateCouponPolicyRemainingQuantityCommand(
-            Long couponPolicyId,
-            Integer newMaxIssueCount,
-            Long modifiedBy,
-            String reason) {
-        this.couponPolicyId = couponPolicyId;
-        this.newMaxIssueCount = newMaxIssueCount;
-        this.modifiedBy = modifiedBy;
-        this.reason = reason;
-        this.validateSelf();
-    }
 }
