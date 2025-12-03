@@ -30,4 +30,9 @@ public interface SaveCouponIssuePort {
      * 여러 쿠폰 발급 저장
      */
     List<CouponIssue> saveAll(List<CouponIssue> issues);
+
+    /**
+     * 여러 쿠폰 업데이트 (배치 처리)
+     */
+    void updateAll(List<CouponIssue> issues);
 }

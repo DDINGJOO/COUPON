@@ -58,8 +58,8 @@ public class KafkaConfig {
         // 수동 ACK 모드 설정
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
 
-        // 동시 처리 스레드 수 설정
-        factory.setConcurrency(3);
+        // 동시 처리 스레드 수 설정 (성능 향상을 위해 증가)
+        factory.setConcurrency(10);
 
         // 에러 핸들러 설정 (필요시)
         // factory.setErrorHandler(new SeekToCurrentErrorHandler());

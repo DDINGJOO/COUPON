@@ -37,6 +37,19 @@ public class ProcessPaymentUseCaseService implements ProcessPaymentUseCase {
 
             CouponIssue coupon = couponOpt.get();
 
+            // 멱등성 체크: 이미 사용된 쿠폰인지 확인
+            if (coupon.getStatus() == CouponStatus.USED) {
+                if (command.getOrderId().equals(coupon.getOrderId())) {
+                    log.info("이미 처리된 결제 이벤트 (멱등성 보장) - orderId: {}, reservationId: {}",
+                            command.getOrderId(), command.getReservationId());
+                    return PaymentResult.success(command.getReservationId(), command.getOrderId());
+                } else {
+                    log.error("쿠폰이 다른 주문에 이미 사용됨 - couponOrderId: {}, newOrderId: {}",
+                            coupon.getOrderId(), command.getOrderId());
+                    return PaymentResult.failure(command.getReservationId(), "쿠폰이 다른 주문에 이미 사용됨");
+                }
+            }
+
             // Update coupon status to USED
             coupon.use(command.getOrderId(), command.getDiscountAmount());
             saveCouponIssuePort.save(coupon);
@@ -67,6 +80,18 @@ public class ProcessPaymentUseCaseService implements ProcessPaymentUseCase {
             }
 
             CouponIssue coupon = couponOpt.get();
+
+            // 멱등성 체크: 이미 ISSUED 상태인지 확인
+            if (coupon.getStatus() == CouponStatus.ISSUED) {
+                log.info("이미 예약 해제된 쿠폰 (멱등성 보장) - reservationId: {}", command.getReservationId());
+                return PaymentResult.success(command.getReservationId(), command.getOrderId());
+            }
+
+            // 이미 사용된 쿠폰은 취소할 수 없음
+            if (coupon.getStatus() == CouponStatus.USED) {
+                log.warn("이미 사용된 쿠폰은 예약 취소 불가 - reservationId: {}", command.getReservationId());
+                return PaymentResult.failure(command.getReservationId(), "이미 사용된 쿠폰");
+            }
 
             // Cancel reservation and revert status to ISSUED
             coupon.cancelReservation();

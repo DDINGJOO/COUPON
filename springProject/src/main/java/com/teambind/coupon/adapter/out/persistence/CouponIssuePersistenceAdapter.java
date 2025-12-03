@@ -185,4 +185,25 @@ public class CouponIssuePersistenceAdapter implements LoadCouponIssuePort, SaveC
         return repository.findById(couponId)
                 .map(mapper::toDomain);
     }
+
+    @Override
+    @Transactional
+    public void updateAll(List<CouponIssue> issues) {
+        if (issues.isEmpty()) {
+            return;
+        }
+
+        List<CouponIssueEntity> entities = issues.stream()
+                .map(issue -> {
+                    CouponIssueEntity entity = repository.findById(issue.getId())
+                            .orElseThrow(() -> new IllegalArgumentException("쿠폰을 찾을 수 없습니다: " + issue.getId()));
+                    mapper.updateEntity(entity, issue);
+                    return entity;
+                })
+                .collect(Collectors.toList());
+
+        repository.saveAll(entities);
+
+        log.info("쿠폰 일괄 업데이트 완료 - count: {}", entities.size());
+    }
 }

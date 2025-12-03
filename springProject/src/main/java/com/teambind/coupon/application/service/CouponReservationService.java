@@ -10,6 +10,7 @@ import com.teambind.coupon.domain.exception.CouponDomainException;
 import com.teambind.coupon.domain.model.CouponIssue;
 import com.teambind.coupon.domain.model.CouponPolicy;
 import com.teambind.coupon.domain.model.CouponStatus;
+import com.teambind.coupon.domain.model.DiscountType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -112,10 +113,15 @@ public class CouponReservationService implements ReserveCouponUseCase {
             // 7. 예약 만료 시간 계산
             LocalDateTime reservedUntil = LocalDateTime.now().plusMinutes(reservationTimeoutMinutes);
 
-            // 8. 할인 금액 계산 (예시 - 실제로는 상품 가격 정보가 필요함)
-            BigDecimal discountAmount = policy.getDiscountPolicy() != null
-                    ? policy.getDiscountPolicy().getDiscountValue()
-                    : BigDecimal.ZERO;
+            // 8. 할인 금액 계산 및 검증
+            BigDecimal discountAmount = calculateDiscountAmount(policy, command.getOrderAmount());
+
+            // 할인 금액이 주문 금액보다 크면 조정
+            if (command.getOrderAmount() != null && discountAmount.compareTo(command.getOrderAmount()) > 0) {
+                log.warn("할인 금액이 주문 금액보다 큼 - discount: {}, orderAmount: {}",
+                        discountAmount, command.getOrderAmount());
+                discountAmount = command.getOrderAmount();
+            }
 
             log.info("쿠폰 예약 성공 - reservationId: {}, couponId: {}, reservedUntil: {}",
                     command.getReservationId(), command.getCouponId(), reservedUntil);
@@ -151,25 +157,64 @@ public class CouponReservationService implements ReserveCouponUseCase {
     private String validateCouponForReservation(CouponIssue couponIssue) {
         // 쿠폰 상태 확인
         if (couponIssue.getStatus() != CouponStatus.ISSUED) {
-            if (couponIssue.getStatus() == CouponStatus.USED) {
-                return "예약할 수 없는 상태입니다";
-            }
-            if (couponIssue.getStatus() == CouponStatus.RESERVED) {
-                return "예약할 수 없는 상태입니다";
-            }
-            if (couponIssue.getStatus() == CouponStatus.EXPIRED) {
-                return "예약할 수 없는 상태입니다";
-            }
-            if (couponIssue.getStatus() == CouponStatus.CANCELLED) {
-                return "예약할 수 없는 상태입니다";
+            switch (couponIssue.getStatus()) {
+                case USED:
+                    return "이미 사용된 쿠폰입니다";
+                case RESERVED:
+                    return "이미 예약된 쿠폰입니다 (예약ID: " + couponIssue.getReservationId() + ")";
+                case EXPIRED:
+                    return "만료된 쿠폰입니다";
+                case CANCELLED:
+                    return "취소된 쿠폰입니다";
+                default:
+                    return "예약할 수 없는 상태입니다 (상태: " + couponIssue.getStatus() + ")";
             }
         }
 
         // 사용 가능 상태 확인
         if (!couponIssue.isUsable()) {
-            return "예약할 수 없는 상태입니다";
+            if (couponIssue.isExpired()) {
+                return "유효기간이 만료된 쿠폰입니다";
+            }
+            return "사용할 수 없는 쿠폰입니다";
         }
 
         return null; // 검증 통과
+    }
+
+    /**
+     * 할인 금액 계산
+     * @param policy 쿠폰 정책
+     * @param orderAmount 주문 금액
+     * @return 할인 금액
+     */
+    private BigDecimal calculateDiscountAmount(CouponPolicy policy, BigDecimal orderAmount) {
+        if (policy.getDiscountPolicy() == null) {
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal discountAmount = BigDecimal.ZERO;
+
+        // 정률 할인인 경우
+        if (policy.getDiscountPolicy().getDiscountType() == DiscountType.PERCENTAGE) {
+            if (orderAmount != null) {
+                BigDecimal percentage = policy.getDiscountPolicy().getDiscountValue()
+                        .divide(new BigDecimal("100"));
+                discountAmount = orderAmount.multiply(percentage);
+
+                // 최대 할인 금액 제한 적용
+                BigDecimal maxDiscount = policy.getDiscountPolicy().getMaxDiscountAmount();
+                if (maxDiscount != null && discountAmount.compareTo(maxDiscount) > 0) {
+                    discountAmount = maxDiscount;
+                }
+            }
+        }
+        // 정액 할인인 경우
+        else if (policy.getDiscountPolicy().getDiscountType() == DiscountType.FIXED_AMOUNT
+                || policy.getDiscountPolicy().getDiscountType() == DiscountType.AMOUNT) {
+            discountAmount = policy.getDiscountPolicy().getDiscountValue();
+        }
+
+        return discountAmount;
     }
 }

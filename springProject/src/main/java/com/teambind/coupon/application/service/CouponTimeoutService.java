@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -47,18 +48,33 @@ public class CouponTimeoutService implements ProcessTimeoutReservationsUseCase {
 
         log.info("타임아웃된 예약 쿠폰 발견 - count: {}", timeoutReservations.size());
 
+        // 3. 배치 처리를 위한 리스트 준비
+        List<CouponIssue> processedCoupons = new ArrayList<>();
         int processedCount = 0;
 
-        // 3. 각 쿠폰을 ISSUED 상태로 복구
+        // 4. 각 쿠폰을 타임아웃 처리
         for (CouponIssue couponIssue : timeoutReservations) {
             try {
-                processTimeoutCoupon(couponIssue, timeoutTime);
-                processedCount++;
+                if (processTimeoutCouponForBatch(couponIssue, timeoutTime)) {
+                    processedCoupons.add(couponIssue);
+                    processedCount++;
+
+                    // 배치 크기에 도달하면 저장
+                    if (processedCoupons.size() >= 100) {
+                        saveCouponIssuePort.updateAll(processedCoupons);
+                        processedCoupons.clear();
+                    }
+                }
             } catch (Exception e) {
                 log.error("쿠폰 타임아웃 처리 실패 - couponId: {}, error: {}",
                         couponIssue.getId(), e.getMessage(), e);
                 // 개별 실패는 무시하고 계속 처리
             }
+        }
+
+        // 5. 남은 쿠폰들 저장
+        if (!processedCoupons.isEmpty()) {
+            saveCouponIssuePort.updateAll(processedCoupons);
         }
 
         log.info("예약 타임아웃 처리 완료 - processed: {}/{}", processedCount, timeoutReservations.size());
@@ -67,36 +83,25 @@ public class CouponTimeoutService implements ProcessTimeoutReservationsUseCase {
     }
 
     /**
-     * 개별 쿠폰 타임아웃 처리
-     * reservationId는 유지하면서 상태만 ISSUED로 변경
+     * 배치 처리를 위한 개별 쿠폰 타임아웃 처리
+     * @return 처리 성공 여부
      */
-    private void processTimeoutCoupon(CouponIssue couponIssue, LocalDateTime timeoutTime) {
+    private boolean processTimeoutCouponForBatch(CouponIssue couponIssue, LocalDateTime timeoutTime) {
         // 타임아웃 확인
         if (!couponIssue.isReservationTimeout(reservationTimeoutMinutes)) {
             log.debug("아직 타임아웃되지 않은 쿠폰 - couponId: {}, reservedAt: {}",
                     couponIssue.getId(), couponIssue.getReservedAt());
-            return;
+            return false;
         }
 
         String originalReservationId = couponIssue.getReservationId();
 
-        // 예약 취소 (상태를 ISSUED로 변경, reservationId는 유지)
-        couponIssue.cancelReservation();
+        // 타임아웃 처리 (reservationId 유지)
+        couponIssue.timeoutReservation();
 
-        // reservationId를 다시 설정 (cancelReservation이 null로 만들기 때문)
-        // 이렇게 하면 나중에 같은 reservationId로 결제 이벤트가 와도 처리 가능
-        if (originalReservationId != null) {
-            // 리플렉션이나 별도 메서드가 필요할 수 있음
-            // 도메인 모델에 setReservationId 메서드를 추가하거나
-            // 별도의 타임아웃 취소 메서드를 만드는 것이 좋음
-            log.info("쿠폰 예약 타임아웃 - 상태 복구 - couponId: {}, reservationId: {}",
-                    couponIssue.getId(), originalReservationId);
-        }
+        log.debug("쿠폰 예약 타임아웃 처리 - couponId: {}, reservationId: {}",
+                couponIssue.getId(), originalReservationId);
 
-        // 변경사항 저장
-        saveCouponIssuePort.update(couponIssue);
-
-        log.info("쿠폰 예약 타임아웃 처리 완료 - couponId: {}, reservationId: {}, reservedAt: {}",
-                couponIssue.getId(), originalReservationId, couponIssue.getReservedAt());
+        return true;
     }
 }

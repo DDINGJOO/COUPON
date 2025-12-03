@@ -2,7 +2,10 @@ package com.teambind.coupon.application.port.in;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
+
+import java.math.BigDecimal;
 
 /**
  * 쿠폰 예약 커맨드
@@ -24,6 +27,9 @@ public class ReserveCouponCommand {
     @NotNull(message = "쿠폰 ID는 필수입니다")
     private Long couponId;
 
+    @Positive(message = "주문 금액은 0보다 커야 합니다")
+    private BigDecimal orderAmount; // 주문 금액 (할인 검증용)
+
     /**
      * 정적 팩토리 메서드
      */
@@ -32,6 +38,18 @@ public class ReserveCouponCommand {
                 .reservationId(reservationId)
                 .userId(userId)
                 .couponId(couponId)
+                .build();
+    }
+
+    /**
+     * 정적 팩토리 메서드 (주문 금액 포함)
+     */
+    public static ReserveCouponCommand of(String reservationId, Long userId, Long couponId, BigDecimal orderAmount) {
+        return ReserveCouponCommand.builder()
+                .reservationId(reservationId)
+                .userId(userId)
+                .couponId(couponId)
+                .orderAmount(orderAmount)
                 .build();
     }
 }

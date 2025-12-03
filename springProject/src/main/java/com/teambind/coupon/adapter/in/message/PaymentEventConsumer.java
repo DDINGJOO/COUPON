@@ -55,12 +55,14 @@ public class PaymentEventConsumer {
                     log.info("쿠폰 사용 확정 완료: reservationId={}, orderId={}",
                             event.getReservationId(), event.getOrderId());
                 } else {
-                    log.warn("쿠폰 사용 확정 실패: reservationId={}, message={}",
+                    // 비즈니스 로직 실패는 재처리가 필요하므로 ACK하지 않음
+                    log.error("쿠폰 사용 확정 실패 - 재처리 필요: reservationId={}, message={}",
                             event.getReservationId(), result.getMessage());
+                    return; // ACK하지 않고 리턴
                 }
             }
 
-            // 메시지 처리 완료
+            // 성공적으로 처리된 경우에만 ACK
             acknowledgment.acknowledge();
 
         } catch (Exception e) {
@@ -99,12 +101,14 @@ public class PaymentEventConsumer {
                 if (result.isSuccess()) {
                     log.info("쿠폰 예약 해제 완료: reservationId={}", event.getReservationId());
                 } else {
-                    log.warn("쿠폰 예약 해제 실패: reservationId={}, message={}",
+                    // 비즈니스 로직 실패는 재처리가 필요하므로 ACK하지 않음
+                    log.error("쿠폰 예약 해제 실패 - 재처리 필요: reservationId={}, message={}",
                             event.getReservationId(), result.getMessage());
+                    return; // ACK하지 않고 리턴
                 }
             }
 
-            // 메시지 처리 완료
+            // 성공적으로 처리된 경우에만 ACK
             acknowledgment.acknowledge();
 
         } catch (Exception e) {

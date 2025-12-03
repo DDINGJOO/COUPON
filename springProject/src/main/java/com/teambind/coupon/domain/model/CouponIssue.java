@@ -1,6 +1,7 @@
 package com.teambind.coupon.domain.model;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import java.time.LocalDateTime;
  * 발급된 쿠폰 도메인 모델
  * 사용자에게 발급된 쿠폰 인스턴스를 나타냄
  */
+@Slf4j
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -72,6 +74,19 @@ public class CouponIssue {
             this.status = CouponStatus.ISSUED;
             this.reservationId = null;
             this.reservedAt = null;
+        }
+    }
+
+    /**
+     * 쿠폰 예약 타임아웃 처리
+     * reservationId는 유지하면서 상태만 ISSUED로 변경 (늦은 결제 이벤트 처리를 위해)
+     */
+    public void timeoutReservation() {
+        if (status == CouponStatus.RESERVED) {
+            this.status = CouponStatus.ISSUED;
+            // reservationId는 유지 (늦은 결제 이벤트를 위해)
+            // reservedAt도 유지 (타임아웃 시점 추적을 위해)
+            log.debug("예약 타임아웃 처리 - reservationId 유지: {}", this.reservationId);
         }
     }
 
