@@ -184,7 +184,7 @@ class PaymentEventConsumerUnitTest {
         }
 
         @Test
-        @DisplayName("처리 결과가 실패여도 ACK는 수행한다")
+        @DisplayName("처리 결과가 실패면 ACK를 수행하지 않는다")
         void handlePaymentCompletedWithFailureResult() {
             // given
             String reservationId = "RES-005";
@@ -219,7 +219,7 @@ class PaymentEventConsumerUnitTest {
 
             // then
             verify(processPaymentUseCase).processPaymentCompleted(any());
-            verify(acknowledgment).acknowledge(); // 비즈니스 로직 실패여도 ACK 수행
+            verify(acknowledgment, never()).acknowledge(); // 비즈니스 로직 실패 시 ACK 하지 않음
         }
     }
 
@@ -332,7 +332,7 @@ class PaymentEventConsumerUnitTest {
         }
 
         @Test
-        @DisplayName("처리 결과가 실패여도 ACK는 수행한다")
+        @DisplayName("처리 결과가 실패면 ACK를 수행하지 않는다")
         void handlePaymentFailedWithFailureResult() {
             // given
             String reservationId = "RES-FAIL-004";
@@ -365,7 +365,7 @@ class PaymentEventConsumerUnitTest {
 
             // then
             verify(processPaymentUseCase).processPaymentFailed(any());
-            verify(acknowledgment).acknowledge();
+            verify(acknowledgment, never()).acknowledge(); // 비즈니스 로직 실패 시 ACK 하지 않음
         }
     }
 
