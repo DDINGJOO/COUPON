@@ -241,7 +241,7 @@ public class CouponQueryE2ETest extends BaseE2ETest {
         @DisplayName("복수 상품ID 필터링")
         void testFilterByProductIds() {
             // 테스트 정책의 상품 ID 확인
-            // 테스트용 상품 ID 배열
+            // 테스트 정책의 적용 가능 상품 ID
             Long[] productIds = new Long[]{1L, 2L, 3L};
 
             Response response = given()
@@ -267,7 +267,7 @@ public class CouponQueryE2ETest extends BaseE2ETest {
         @Order(7)
         @DisplayName("복합 필터링 - 상태 + 상품ID")
         void testComplexFiltering() {
-            // 테스트용 상품 ID 배열
+            // 테스트 정책의 적용 가능 상품 ID
             Long[] productIds = new Long[]{1L, 2L, 3L};
 
             Response response = given()

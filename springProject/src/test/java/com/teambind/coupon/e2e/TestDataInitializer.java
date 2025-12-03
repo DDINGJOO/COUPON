@@ -42,7 +42,18 @@ public class TestDataInitializer {
         List<CouponPolicyEntity> policies = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
+            // Snowflake ID 생성 (간단한 구현)
+            long snowflakeId = System.currentTimeMillis() * 1000 + i;
+
+            // 적용 가능 상품 규칙 생성
+            CouponPolicyEntity.ItemApplicableRuleJson applicableRule =
+                CouponPolicyEntity.ItemApplicableRuleJson.builder()
+                    .allItemsApplicable(false)
+                    .applicableItemIds(List.of(1L, 2L, 3L))
+                    .build();
+
             CouponPolicyEntity policy = CouponPolicyEntity.builder()
+                    .id(snowflakeId)
                     .couponName("E2E 테스트 쿠폰 " + (i + 1))
                     .couponCode("E2E_CODE_" + (i + 1))
                     .description("E2E 테스트용 쿠폰 정책")
@@ -50,15 +61,14 @@ public class TestDataInitializer {
                     .discountValue(i % 2 == 0 ? BigDecimal.valueOf(10) : BigDecimal.valueOf(1000))
                     .minimumOrderAmount(BigDecimal.valueOf(10000))
                     .maxDiscountAmount(BigDecimal.valueOf(5000))
-                    // .applicableProductIds(generateProductIds(i)) // TODO: Entity 필드 추가 후 복원
+                    .applicableRule(applicableRule)
                     .distributionType(DistributionType.CODE)
                     .validFrom(LocalDateTime.now().minusDays(10))
                     .validUntil(LocalDateTime.now().plusDays(30))
                     .maxIssueCount(1000)
                     .maxUsagePerUser(5)
                     .isActive(true)
-                    // .createdAt(LocalDateTime.now())  // @CreationTimestamp가 자동 설정
-                    // .createdBy(1L)  // TODO: Auditing 설정 후 복원
+                    .createdBy(1L)
                     .build();
 
             policies.add(couponPolicyRepository.save(policy));

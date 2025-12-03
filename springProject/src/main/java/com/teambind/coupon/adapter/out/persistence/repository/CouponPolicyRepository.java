@@ -79,9 +79,9 @@ public interface CouponPolicyRepository extends JpaRepository<CouponPolicyEntity
      */
     @Modifying
     @Query("UPDATE CouponPolicyEntity cp " +
-           "SET cp.currentIssueCount = cp.currentIssueCount + :quantity " +
+           "SET cp.maxIssueCount = cp.maxIssueCount - :quantity " +
            "WHERE cp.id = :policyId " +
-           "AND cp.currentIssueCount + :quantity <= cp.maxIssueCount")
+           "AND cp.maxIssueCount >= :quantity")
     int decrementStockBatch(@Param("policyId") Long policyId, @Param("quantity") int quantity);
 
     /**
@@ -89,7 +89,7 @@ public interface CouponPolicyRepository extends JpaRepository<CouponPolicyEntity
      */
     @Modifying
     @Query("UPDATE CouponPolicyEntity cp " +
-           "SET cp.currentIssueCount = GREATEST(0, cp.currentIssueCount - :quantity) " +
+           "SET cp.maxIssueCount = cp.maxIssueCount + :quantity " +
            "WHERE cp.id = :policyId")
     int incrementStock(@Param("policyId") Long policyId, @Param("quantity") int quantity);
 
