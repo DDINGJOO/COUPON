@@ -132,11 +132,37 @@ Development: http://localhost:8080
 
 **Response (204 No Content)**
 
+#### 1.5 쿠폰 정책 남은 발급 수량 수정
+
+**PATCH** `/api/coupon-policies/{policyId}/remaining-quantity`
+
+**Request Body**
+```json
+{
+    "newMaxIssueCount": 5000,
+    "modifiedBy": "ADMIN",
+    "reason": "추가 재고 할당"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "couponPolicyId": 1,
+    "previousMaxIssueCount": 1000,
+    "newMaxIssueCount": 5000,
+    "currentIssuedCount": 500,
+    "remainingCount": 4500,
+    "success": true,
+    "message": "쿠폰 정책 남은 발급 수량이 성공적으로 수정되었습니다"
+}
+```
+
 ### 2. 쿠폰 발급
 
-#### 2.1 코드로 쿠폰 발급
+#### 2.1 쿠폰 다운로드 (코드로 발급)
 
-**POST** `/api/coupons/issue/code`
+**POST** `/api/coupons/download`
 
 **Request Body**
 ```json
@@ -146,7 +172,7 @@ Development: http://localhost:8080
 }
 ```
 
-**Response (200 OK)**
+**Response (201 Created)**
 ```json
 {
     "couponId": 1001,
@@ -159,19 +185,33 @@ Development: http://localhost:8080
 }
 ```
 
-#### 2.2 직접 발급
+#### 2.2 쿠폰 코드 유효성 확인
 
-**POST** `/api/coupons/issue/direct`
+**GET** `/api/coupons/validate/{couponCode}`
+
+**Response (200 OK)**
+```json
+{
+    "couponCode": "WELCOME2024",
+    "valid": true,
+    "message": "사용 가능한 쿠폰입니다"
+}
+```
+
+#### 2.3 직접 발급 (관리자)
+
+**POST** `/api/coupons/direct-issue`
 
 **Request Body**
 ```json
 {
-    "policyId": 1,
-    "userIds": [12345, 12346, 12347]
+    "couponPolicyId": 1,
+    "userIds": [12345, 12346, 12347],
+    "issuedBy": "ADMIN"
 }
 ```
 
-**Response (200 OK)**
+**Response (201 Created - 전체 성공)**
 ```json
 {
     "totalRequested": 3,
@@ -197,7 +237,17 @@ Development: http://localhost:8080
 }
 ```
 
-#### 2.3 배치 발급 (관리자)
+**Response (207 Multi-Status - 부분 성공)**
+```json
+{
+    "totalRequested": 3,
+    "successCount": 2,
+    "failureCount": 1,
+    "results": []
+}
+```
+
+#### 2.4 배치 발급 (관리자)
 
 **POST** `/api/coupons/issue/batch`
 
@@ -229,7 +279,7 @@ Development: http://localhost:8080
 }
 ```
 
-#### 2.4 선착순 발급 (EVENT)
+#### 2.5 선착순 발급 (EVENT)
 
 **POST** `/api/coupons/issue/fcfs`
 
@@ -261,7 +311,76 @@ Development: http://localhost:8080
 }
 ```
 
-#### 2.5 사용자 쿠폰 목록 조회
+#### 2.6 사용자 쿠폰 목록 조회 (커서 기반)
+
+**GET** `/api/coupons/users/{userId}`
+
+**Query Parameters**
+- `status`: AVAILABLE | UNUSED | USED | EXPIRED (쿠폰 상태 필터)
+- `productIds`: 상품 ID 리스트 (복수 선택 가능)
+- `cursor`: 커서 (마지막 쿠폰 ID)
+- `limit`: 조회 개수 (기본: 20, 최대: 100)
+
+**Response (200 OK)**
+```json
+{
+    "coupons": [
+        {
+            "couponId": 1001,
+            "couponName": "신규 가입 쿠폰",
+            "discountType": "FIXED_AMOUNT",
+            "discountValue": 10000,
+            "status": "ISSUED",
+            "expiryDate": "2024-01-31T23:59:59",
+            "issuedAt": "2024-01-01T10:00:00"
+        }
+    ],
+    "nextCursor": 1002,
+    "hasMore": true
+}
+```
+
+#### 2.7 만료 임박 쿠폰 조회
+
+**GET** `/api/coupons/users/{userId}/expiring`
+
+**Query Parameters**
+- `days`: 만료까지 남은 일수 (기본: 7일)
+- `limit`: 조회 개수 (기본: 10개)
+
+**Response (200 OK)**
+```json
+{
+    "coupons": [
+        {
+            "couponId": 1001,
+            "couponName": "신규 가입 쿠폰",
+            "discountType": "FIXED_AMOUNT",
+            "discountValue": 10000,
+            "expiryDate": "2024-01-31T23:59:59",
+            "daysUntilExpiry": 3
+        }
+    ],
+    "totalCount": 2
+}
+```
+
+#### 2.8 사용자 쿠폰 통계
+
+**GET** `/api/coupons/users/{userId}/statistics`
+
+**Response (200 OK)**
+```json
+{
+    "totalCoupons": 10,
+    "availableCoupons": 5,
+    "usedCoupons": 3,
+    "expiredCoupons": 2,
+    "totalSavedAmount": 30000
+}
+```
+
+#### 2.9 사용자 쿠폰 목록 조회 (레거시)
 
 **GET** `/api/coupons/users/me`
 
@@ -301,14 +420,12 @@ Development: http://localhost:8080
 
 **POST** `/api/coupons/reserve`
 
-**Required Headers**
-- `X-User-Id: {userId}`
-
 **Request Body**
 ```json
 {
-    "couponId": 1001,
     "reservationId": "RESV-2024-0001",
+    "userId": 12345,
+    "couponId": 1001,
     "orderAmount": 100000
 }
 ```
@@ -318,15 +435,47 @@ Development: http://localhost:8080
 {
     "reservationId": "RESV-2024-0001",
     "couponId": 1001,
-    "orderId": "ORDER-2024-0001",
-    "discountAmount": 10000,
-    "finalAmount": 90000,
-    "reservedAt": "2024-01-01T10:00:00",
-    "expiresAt": "2024-01-01T10:30:00"
+    "success": true,
+    "message": "쿠폰이 성공적으로 예약되었습니다",
+    "reservedAt": "2024-01-01T10:00:00"
 }
 ```
 
-#### 3.2 쿠폰 사용 확정
+#### 3.2 쿠폰 적용 (상품별 쿠폰 적용 가능 여부 확인)
+
+**POST** `/api/coupons/apply`
+
+**Request Body**
+```json
+{
+    "reservationId": "RESV-2024-0001",
+    "userId": 12345,
+    "couponId": 1001,
+    "orderAmount": 100000
+}
+```
+
+**Response (200 OK)**
+```json
+{
+    "couponId": "1001",
+    "couponName": "신규 회원 5000원 할인",
+    "discountType": "FIXED_AMOUNT",
+    "discountValue": 5000,
+    "maxDiscountAmount": null
+}
+```
+
+**Response (204 No Content)**
+적용 가능한 쿠폰이 없을 경우
+
+#### 3.3 쿠폰 락 해제
+
+**DELETE** `/api/coupons/apply/{reservationId}`
+
+**Response (200 OK)**
+
+#### 3.4 쿠폰 사용 확정
 
 **POST** `/api/coupons/use`
 
@@ -349,7 +498,7 @@ Development: http://localhost:8080
 }
 ```
 
-#### 3.3 쿠폰 예약 취소
+#### 3.5 쿠폰 예약 취소
 
 **DELETE** `/api/coupons/reserve/{reservationId}`
 
